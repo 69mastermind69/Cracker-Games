@@ -12,7 +12,10 @@ from telegram.ext import ContextTypes
 # START / HELP
 # ============================================================
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
     keyboard = [
         [
             InlineKeyboardButton(
@@ -169,7 +172,7 @@ async def games_command(
 
 
 # ============================================================
-# OPTIONAL / COMMON COMMANDS
+# ABOUT
 # ============================================================
 
 async def about_command(

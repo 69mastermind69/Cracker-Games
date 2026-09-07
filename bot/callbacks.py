@@ -1,14 +1,19 @@
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from bot.handlers import games_menu
 
 
-# ==================================================
-# BACK TO GAMES
-# ==================================================
+# ============================================================
+# MAIN MENU
+# ============================================================
 
 async def show_games_menu(query) -> None:
+    
+    Show the main games menu.
+    
+
     await query.edit_message_text(
         "🎮 *Choose a Game*",
         parse_mode="Markdown",
@@ -16,35 +21,48 @@ async def show_games_menu(query) -> None:
     )
 
 
-# ==================================================
-# GAME CALLBACK CONTROLLER
-# ==================================================
+# ============================================================
+# CALLBACK CONTROLLER
+# ============================================================
 
 async def button_callback(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
+    
+    Central callback controller.
+
+    All inline keyboard callbacks come through here.
+    
 
     query = update.callback_query
 
-    if not query:
+    if query is None:
         return
-
-    await query.answer()
 
     data = query.data or ""
 
-    # ------------------------------------------------
-    # Main menu
-    # ------------------------------------------------
+    # --------------------------------------------------------
+    # Answer callback immediately
+    # --------------------------------------------------------
 
-    if data == "menu:games":
+    await query.answer()
+
+    # ========================================================
+    # MAIN GAME MENU
+    # ========================================================
+
+    if data in {
+        "menu:games",
+        "menu",
+        "games:menu",
+    }:
         await show_games_menu(query)
         return
 
-    # ------------------------------------------------
-    # Dice
-    # ------------------------------------------------
+    # ========================================================
+    # DICE
+    # ========================================================
 
     if data == "game:dice":
         from bot.games.dice import start_dice
@@ -52,9 +70,9 @@ async def button_callback(
         await start_dice(query)
         return
 
-    # ------------------------------------------------
-    # Coin Flip
-    # ------------------------------------------------
+    # ========================================================
+    # COIN FLIP
+    # ========================================================
 
     if data == "game:coin":
         from bot.games.coin import start_coin
@@ -62,9 +80,9 @@ async def button_callback(
         await start_coin(query)
         return
 
-    # ------------------------------------------------
-    # Rock Paper Scissors
-    # ------------------------------------------------
+    # ========================================================
+    # ROCK PAPER SCISSORS
+    # ========================================================
 
     if data == "game:rps":
         from bot.games.rps import start_rps
@@ -78,9 +96,9 @@ async def button_callback(
         await handle_rps(query, data)
         return
 
-    # ------------------------------------------------
-    # Number Guess
-    # ------------------------------------------------
+    # ========================================================
+    # NUMBER GUESS
+    # ========================================================
 
     if data == "game:number":
         from bot.games.number_guess import start_number_guess
@@ -94,9 +112,9 @@ async def button_callback(
         await handle_number_guess(query, data)
         return
 
-    # ------------------------------------------------
-    # Quiz
-    # ------------------------------------------------
+    # ========================================================
+    # QUIZ
+    # ========================================================
 
     if data == "game:quiz":
         from bot.games.quiz import start_quiz
@@ -104,15 +122,21 @@ async def button_callback(
         await start_quiz(query)
         return
 
-    if data.startswith("quiz:"):
+    if data == "quiz:next":
+        from bot.games.quiz import continue_quiz
+
+        await continue_quiz(query)
+        return
+
+    if data.startswith("quiz:answer:"):
         from bot.games.quiz import handle_quiz
 
         await handle_quiz(query, data)
         return
 
-    # ------------------------------------------------
-    # Word Scramble
-    # ------------------------------------------------
+    # ========================================================
+    # WORD SCRAMBLE
+    # ========================================================
 
     if data == "game:scramble":
         from bot.games.scramble import start_scramble
@@ -126,9 +150,9 @@ async def button_callback(
         await handle_scramble(query, data)
         return
 
-    # ------------------------------------------------
-    # Hangman
-    # ------------------------------------------------
+    # ========================================================
+    # HANGMAN
+    # ========================================================
 
     if data == "game:hangman":
         from bot.games.hangman import start_hangman
@@ -142,9 +166,9 @@ async def button_callback(
         await handle_hangman(query, data)
         return
 
-    # ------------------------------------------------
-    # Tic-Tac-Toe
-    # ------------------------------------------------
+    # ========================================================
+    # TIC-TAC-TOE
+    # ========================================================
 
     if data == "game:ttt":
         from bot.games.tictactoe import start_tictactoe
@@ -158,9 +182,9 @@ async def button_callback(
         await handle_tictactoe(query, data)
         return
 
-    # ------------------------------------------------
-    # Connect Four
-    # ------------------------------------------------
+    # ========================================================
+    # CONNECT FOUR
+    # ========================================================
 
     if data == "game:connect4":
         from bot.games.connect4 import start_connect4
@@ -174,9 +198,9 @@ async def button_callback(
         await handle_connect4(query, data)
         return
 
-    # ------------------------------------------------
-    # Math Challenge
-    # ------------------------------------------------
+    # ========================================================
+    # MATH CHALLENGE
+    # ========================================================
 
     if data == "game:math":
         from bot.games.math_challenge import start_math
@@ -190,9 +214,9 @@ async def button_callback(
         await handle_math(query, data)
         return
 
-    # ------------------------------------------------
-    # Memory
-    # ------------------------------------------------
+    # ========================================================
+    # MEMORY
+    # ========================================================
 
     if data == "game:memory":
         from bot.games.memory import start_memory
@@ -206,9 +230,9 @@ async def button_callback(
         await handle_memory(query, data)
         return
 
-    # ------------------------------------------------
-    # Higher / Lower
-    # ------------------------------------------------
+    # ========================================================
+    # HIGHER / LOWER
+    # ========================================================
 
     if data == "game:higher":
         from bot.games.higher_lower import start_higher_lower
@@ -222,11 +246,12 @@ async def button_callback(
         await handle_higher_lower(query, data)
         return
 
-    # ------------------------------------------------
-    # Unknown callback
-    # ------------------------------------------------
+    # ========================================================
+    # UNKNOWN CALLBACK
+    # ========================================================
 
     await query.answer(
-        "এই game/action এখনো available নয়।",
+        "⚠️ এই game/action এখনো available নয়।",
         show_alert=True,
     )
+

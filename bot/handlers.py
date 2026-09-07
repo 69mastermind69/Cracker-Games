@@ -76,7 +76,7 @@ def games_menu() -> InlineKeyboardMarkup:
 
 async def start_command(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
+    context: ContextTypes.DEFAULT_TYPE
 ) -> None:
 
     if not update.message:
@@ -119,7 +119,7 @@ async def start_command(
 
 async def games_command(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
+    context: ContextTypes.DEFAULT_TYPE
 ) -> None:
 
     if not update.message:
@@ -142,35 +142,3 @@ async def games_command(
         reply_markup=games_menu(),
     )
 
-
-এখানে তোমার **existing game menu/callback data অপরিবর্তিত** রাখা হয়েছে—শুধু `/start` এবং `/games`-এর message-এ Developer section যোগ হয়েছে। Repository-র `app.py`-ও `start_command` এবং `games_command`-কেই command handler হিসেবে ব্যবহার করছে, তাই `app.py` পরিবর্তন করার প্রয়োজন নেই।
-
-**Output হবে:**
-
-text
-🎮 FREE GAMING HUB 🎮
-
-Welcome!
-
-এই bot-এ বিভিন্ন ধরনের free mini-game
-খেলা যাবে।
-
-━━━━━━━━━━━━━━━━━━
-🎮 Games
-━━━━━━━━━━━━━━━━━━
-
-কোনো paid API নেই।
-কোনো database নেই।
-কোনো permanent profile/data storage নেই।
-
-━━━━━━━━━━━━━━━━━━
-👨‍💻 Developer
-━━━━━━━━━━━━━━━━━━
-
-Name: MASTERMIND
-Telegram: @Do_x_Die
-
-👇 একটি game নির্বাচন করো:
-
-
-@Do_x_Die`-তে click করলে Telegram profile-এ যাওয়ার জন্য link-ও দেওয়া আছে।

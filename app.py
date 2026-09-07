@@ -1,7 +1,11 @@
 import os
+import asyncio
 import logging
+from http import HTTPStatus
 
-from flask import Flask, request
+from asgiref.wsgi import WsgiToAsgi
+from flask import Flask, request, Response
+import uvicorn
 
 from telegram import Update
 from telegram.ext import (
@@ -31,17 +35,15 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-PORT = int(os.getenv("PORT", "10000"))
-
-# Optional:
-# Set this on Render to your public service URL.
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").rstrip("/")
+PORT = int(os.getenv("PORT", "10000"))
 
 
 if not BOT_TOKEN:
-    raise RuntimeError(
-        "BOT_TOKEN environment variable is missing."
-    )
+    raise RuntimeError("BOT_TOKEN environment variable is missing.")
+
+if not WEBHOOK_URL:
+    raise RuntimeError("WEBHOOK_URL environment variable is missing.")
 
 
 # ============================================================
@@ -64,27 +66,19 @@ telegram_app = (
 
 
 # ============================================================
-# TELEGRAM HANDLERS
+# HANDLERS
 # ============================================================
 
 telegram_app.add_handler(
-    CommandHandler(
-        "start",
-        start_command,
-    )
+    CommandHandler("start", start_command)
 )
 
 telegram_app.add_handler(
-    CommandHandler(
-        "games",
-        games_command,
-    )
+    CommandHandler("games", games_command)
 )
 
 telegram_app.add_handler(
-    CallbackQueryHandler(
-        button_callback,
-    )
+    CallbackQueryHandler(button_callback)
 )
 
 
@@ -120,69 +114,65 @@ async def telegram_webhook():
             telegram_app.bot,
         )
 
-        await telegram_app.process_update(update)
+        await telegram_app.update_queue.put(update)
 
-        return "OK", 200
+        return Response(
+            "OK",
+            status=HTTPStatus.OK,
+        )
 
     except Exception:
         logger.exception(
-            "Error while processing Telegram update."
+            "Error while receiving Telegram update."
         )
 
-        return "ERROR", 500
-
-
-# ============================================================
-# STARTUP
-# ============================================================
-
-async def initialize_bot():
-    """
-    Initialize Telegram application and configure webhook.
-    """
-
-    await telegram_app.initialize()
-
-    if WEBHOOK_URL:
-        webhook_url = f"{WEBHOOK_URL}/telegram"
-
-        await telegram_app.bot.set_webhook(
-            url=webhook_url,
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,
-        )
-
-        logger.info(
-            "Telegram webhook configured: %s",
-            webhook_url,
-        )
-
-    else:
-        logger.warning(
-            "WEBHOOK_URL is not configured. "
-            "Telegram webhook was not set."
+        return Response(
+            "ERROR",
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
 
 # ============================================================
-# RUN SERVER
+# START SERVER
 # ============================================================
 
-def main():
-    import asyncio
+async def main():
+
+    webhook_url = f"{WEBHOOK_URL}/telegram"
 
     logger.info(
-        "Starting Telegram Gaming Bot..."
+        "Setting Telegram webhook: %s",
+        webhook_url,
     )
 
-    asyncio.run(
-        initialize_bot()
+    await telegram_app.bot.set_webhook(
+        url=webhook_url,
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True,
     )
 
-    web_app.run(
-        host="0.0.0.0",
-        port=PORT,
+    asgi_app = WsgiToAsgi(web_app)
+
+    server = uvicorn.Server(
+        uvicorn.Config(
+            asgi_app,
+            host="0.0.0.0",
+            port=PORT,
+            log_level="info",
+        )
     )
+
+    async with telegram_app:
+
+        await telegram_app.start()
+
+        logger.info(
+            "🎮 Telegram Gaming Bot is running!"
+        )
+
+        await server.serve()
+
+        await telegram_app.stop()
 
 
 # ============================================================
@@ -190,4 +180,4 @@ def main():
 # ============================================================
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -18,6 +18,21 @@ async def show_games_menu(query) -> None:
 
 
 # ============================================================
+# EXTRA GAMES MENU
+# ============================================================
+
+async def show_extra_games_menu(query) -> None:
+    from bot.games.extra_games import extra_menu
+
+    await query.edit_message_text(
+        "🆕 *More Free Games*\n\n"
+        "আরও free mini-games থেকে একটি নির্বাচন করো 👇",
+        parse_mode="Markdown",
+        reply_markup=extra_menu(),
+    )
+
+
+# ============================================================
 # CALLBACK CONTROLLER
 # ============================================================
 
@@ -33,10 +48,7 @@ async def button_callback(
 
     data = query.data or ""
 
-    # --------------------------------------------------------
     # Answer callback exactly once
-    # --------------------------------------------------------
-
     await query.answer()
 
     # ========================================================
@@ -52,12 +64,16 @@ async def button_callback(
         return
 
     # ========================================================
-    # EXISTING GAMES
+    # EXTRA GAMES MENU
     # ========================================================
 
-    # --------------------------------------------------------
+    if data == "extra:menu":
+        await show_extra_games_menu(query)
+        return
+
+    # ========================================================
     # DICE
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:dice":
         from bot.games.dice import start_dice
@@ -65,9 +81,9 @@ async def button_callback(
         await start_dice(query)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # COIN FLIP
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:coin":
         from bot.games.coin import start_coin
@@ -75,9 +91,9 @@ async def button_callback(
         await start_coin(query)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # ROCK PAPER SCISSORS
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:rps":
         from bot.games.rps import start_rps
@@ -91,9 +107,9 @@ async def button_callback(
         await handle_rps(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # NUMBER GUESS
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:number":
         from bot.games.number_guess import start_number_guess
@@ -107,9 +123,9 @@ async def button_callback(
         await handle_number_guess(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # QUIZ
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:quiz":
         from bot.games.quiz import start_quiz
@@ -129,9 +145,9 @@ async def button_callback(
         await handle_quiz(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # WORD SCRAMBLE
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:scramble":
         from bot.games.scramble import start_scramble
@@ -145,9 +161,9 @@ async def button_callback(
         await handle_scramble(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # HANGMAN
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:hangman":
         from bot.games.hangman import start_hangman
@@ -161,9 +177,9 @@ async def button_callback(
         await handle_hangman(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # TIC-TAC-TOE
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:ttt":
         from bot.games.tictactoe import start_tictactoe
@@ -177,9 +193,9 @@ async def button_callback(
         await handle_tictactoe(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # CONNECT FOUR
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:connect4":
         from bot.games.connect4 import start_connect4
@@ -193,9 +209,9 @@ async def button_callback(
         await handle_connect4(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # MATH CHALLENGE
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:math":
         from bot.games.math_challenge import start_math
@@ -209,9 +225,9 @@ async def button_callback(
         await handle_math(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # MEMORY
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:memory":
         from bot.games.memory import start_memory
@@ -225,9 +241,9 @@ async def button_callback(
         await handle_memory(query, data)
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # HIGHER / LOWER
-    # --------------------------------------------------------
+    # ========================================================
 
     if data == "game:higher":
         from bot.games.higher_lower import start_higher_lower
@@ -243,14 +259,6 @@ async def button_callback(
 
     # ========================================================
     # EXTRA FREE GAMES
-    # ========================================================
-    #
-    # এগুলোর সব logic থাকবে:
-    #
-    # bot/games/extra_games.py
-    #
-    # এখানে শুধু routing করা হচ্ছে।
-    #
     # ========================================================
 
     if data.startswith("extra:"):

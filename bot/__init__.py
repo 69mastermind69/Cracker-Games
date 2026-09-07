@@ -1,5 +1,3 @@
-# bot/__init__.py
-
 
 Telegram Gaming Bot package.
 

@@ -1,5 +1,6 @@
 """
-Telegram Gaming Bot package.
+Game modules for the Telegram Gaming Bot.
 
-The bot does not use a database or permanent user storage.
+All game state is temporary and kept in RAM only.
+No database or permanent user data is used.
 """

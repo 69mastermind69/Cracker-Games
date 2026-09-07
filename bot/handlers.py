@@ -1,4 +1,3 @@
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
@@ -63,6 +62,17 @@ def games_menu() -> InlineKeyboardMarkup:
             InlineKeyboardButton(
                 "🎯 Higher / Lower",
                 callback_data="game:higher"
+            ),
+        ],
+
+        # ==================================================
+        # EXTRA FREE GAMES
+        # ==================================================
+
+        [
+            InlineKeyboardButton(
+                "🆕 More Free Games",
+                callback_data="extra:menu"
             ),
         ],
     ]
@@ -133,7 +143,10 @@ async def games_command(
         "━━━━━━━━━━━━━━━━━━\n\n"
 
         "Name: *MASTERMIND*\n"
-        "Telegram: [@Do_x_Die](https://t.me/Do_x_Die)"
+        "Telegram: [@Do_x_Die](https://t.me/Do_x_Die)\n\n"
+
+        "🆕 *More Free Games* button-এ চাপ দিয়ে "
+        "আরও games খেলতে পারো।"
     )
 
     await update.message.reply_text(
@@ -141,4 +154,3 @@ async def games_command(
         parse_mode="Markdown",
         reply_markup=games_menu(),
     )
-

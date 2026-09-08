@@ -1,6 +1,24 @@
 /* =========================================================
    CRACKER GAMES - TELEGRAM MINI APP
    game.js
+
+   Existing Games:
+   1. Car Racing
+   2. Fighting Arena
+   3. Space Shooter
+   4. Endless Runner
+   5. Penalty Shootout
+   6. Basketball
+   7. Archery
+   8. Target Shooter
+
+   New Games:
+   9. Pipe Connect
+   10. Traffic Escape
+   11. Lights Out
+   12. Stack Tower
+   13. Gravity Maze
+   14. Treasure Hunt
    ========================================================= */
 
 "use strict";
@@ -114,6 +132,46 @@ const GAME_INFO = {
         name: "Target Shooter",
         icon: "🎯",
         description: "Hit targets before they disappear."
+    },
+
+    /* =====================================================
+       NEW GAMES
+       ===================================================== */
+
+    pipe: {
+        name: "Pipe Connect",
+        icon: "🧩",
+        description: "Rotate pipes and connect the entire network."
+    },
+
+    traffic: {
+        name: "Traffic Escape",
+        icon: "🚦",
+        description: "Move the cars and clear the red car's path."
+    },
+
+    lights: {
+        name: "Lights Out",
+        icon: "💡",
+        description: "Turn every light off using as few moves as possible."
+    },
+
+    stack: {
+        name: "Stack Tower",
+        icon: "🏗️",
+        description: "Drop moving blocks and build the tallest tower."
+    },
+
+    gravity: {
+        name: "Gravity Maze",
+        icon: "🌀",
+        description: "Change gravity and guide the explorer to the exit."
+    },
+
+    treasure: {
+        name: "Treasure Hunt",
+        icon: "🗺️",
+        description: "Explore the map, avoid traps and find the treasure."
     }
 
 };
@@ -124,17 +182,11 @@ const GAME_INFO = {
    ========================================================= */
 
 let currentGame = null;
-
 let animationId = null;
-
 let lastFrameTime = 0;
-
 let gameRunning = false;
-
 let score = 0;
-
 let gameTime = 0;
-
 let cleanupCurrentGame = null;
 
 let keyState = {};
@@ -236,10 +288,17 @@ function clearCanvas() {
 
 
 function roundedRect(x, y, width, height, radius) {
-    const r = Math.min(radius, width / 2, height / 2);
+
+    const r = Math.min(
+        radius,
+        width / 2,
+        height / 2
+    );
 
     ctx.beginPath();
+
     ctx.moveTo(x + r, y);
+
     ctx.arcTo(
         x + width,
         y,
@@ -247,6 +306,7 @@ function roundedRect(x, y, width, height, radius) {
         y + height,
         r
     );
+
     ctx.arcTo(
         x + width,
         y + height,
@@ -254,6 +314,7 @@ function roundedRect(x, y, width, height, radius) {
         y + height,
         r
     );
+
     ctx.arcTo(
         x,
         y + height,
@@ -261,6 +322,7 @@ function roundedRect(x, y, width, height, radius) {
         y,
         r
     );
+
     ctx.arcTo(
         x,
         y,
@@ -268,6 +330,7 @@ function roundedRect(x, y, width, height, radius) {
         y,
         r
     );
+
     ctx.closePath();
 }
 
@@ -297,13 +360,17 @@ function showToast(message) {
 function getBestScore(game) {
 
     try {
+
         return Number(
             localStorage.getItem(
                 `cracker_games_best_${game}`
             )
         ) || 0;
+
     } catch {
+
         return 0;
+
     }
 }
 
@@ -311,9 +378,11 @@ function getBestScore(game) {
 function saveBestScore(game, value) {
 
     try {
+
         const oldBest = getBestScore(game);
 
         if (value > oldBest) {
+
             localStorage.setItem(
                 `cracker_games_best_${game}`,
                 String(value)
@@ -333,7 +402,9 @@ function saveBestScore(game, value) {
 function updateBestScore() {
 
     if (!currentGame) {
+
         bestScoreElement.textContent = "0";
+
         return;
     }
 
@@ -377,6 +448,7 @@ function loadTelegramUser() {
     }
 
     if (user.photo_url) {
+
         playerAvatar.textContent = "";
 
         playerAvatar.style.backgroundImage =
@@ -385,6 +457,70 @@ function loadTelegramUser() {
         playerAvatar.style.backgroundSize = "cover";
         playerAvatar.style.backgroundPosition = "center";
     }
+}
+
+
+/* =========================================================
+   ADD NEW GAME CARDS
+   ========================================================= */
+
+function addNewGameCards() {
+
+    const existingCards =
+        document.querySelectorAll(".game-card");
+
+    if (!existingCards.length) {
+        return;
+    }
+
+    const container =
+        existingCards[0].parentElement;
+
+    if (!container) {
+        return;
+    }
+
+    const newGames = [
+        "pipe",
+        "traffic",
+        "lights",
+        "stack",
+        "gravity",
+        "treasure"
+    ];
+
+    newGames.forEach(gameName => {
+
+        if (
+            container.querySelector(
+                `.game-card[data-game="${gameName}"]`
+            )
+        ) {
+            return;
+        }
+
+        const info = GAME_INFO[gameName];
+
+        const card =
+            document.createElement("button");
+
+        card.type = "button";
+        card.className = "game-card";
+        card.dataset.game = gameName;
+
+        card.innerHTML = `
+            <span class="game-icon">${info.icon}</span>
+            <span class="game-name">${info.name}</span>
+            <span class="game-description">${info.description}</span>
+        `;
+
+        container.appendChild(card);
+
+        card.addEventListener(
+            "click",
+            () => openGame(gameName)
+        );
+    });
 }
 
 
@@ -408,7 +544,9 @@ function openGame(gameName) {
     currentGameName.textContent = info.name;
 
     overlayIcon.textContent = info.icon;
+
     overlayTitle.textContent = "Ready?";
+
     overlayDescription.textContent =
         info.description;
 
@@ -460,11 +598,13 @@ function startCurrentGame() {
 
     gameRunning = true;
 
-    lastFrameTime = performance.now();
+    lastFrameTime =
+        performance.now();
 
     setupControls(currentGame);
 
     const starters = {
+
         racing: startRacing,
         fighting: startFighting,
         space: startSpaceShooter,
@@ -472,15 +612,25 @@ function startCurrentGame() {
         penalty: startPenalty,
         basketball: startBasketball,
         archery: startArchery,
-        target: startTarget
+        target: startTarget,
+
+        pipe: startPipeConnect,
+        traffic: startTrafficEscape,
+        lights: startLightsOut,
+        stack: startStackTower,
+        gravity: startGravityMaze,
+        treasure: startTreasureHunt
+
     };
 
     if (starters[currentGame]) {
+
         cleanupCurrentGame =
             starters[currentGame]();
     }
 
-    animationId = requestAnimationFrame(gameLoop);
+    animationId =
+        requestAnimationFrame(gameLoop);
 }
 
 
@@ -493,14 +643,22 @@ function gameOver() {
     gameRunning = false;
 
     if (animationId) {
-        cancelAnimationFrame(animationId);
+
+        cancelAnimationFrame(
+            animationId
+        );
+
         animationId = null;
     }
 
     const isNewBest =
-        saveBestScore(currentGame, score);
+        saveBestScore(
+            currentGame,
+            score
+        );
 
-    finalScore.textContent = score;
+    finalScore.textContent =
+        score;
 
     finalBestScore.textContent =
         getBestScore(currentGame);
@@ -510,14 +668,23 @@ function gameOver() {
     show(gameOverOverlay);
 
     if (isNewBest) {
-        showToast("🏆 New Best Score!");
+        showToast(
+            "🏆 New Best Score!"
+        );
     }
 
-    if (tg && tg.HapticFeedback) {
+    if (
+        tg &&
+        tg.HapticFeedback
+    ) {
+
         try {
-            tg.HapticFeedback.notificationOccurred(
-                "success"
-            );
+
+            tg.HapticFeedback
+                .notificationOccurred(
+                    "success"
+                );
+
         } catch {
             // Ignore.
         }
@@ -530,13 +697,20 @@ function stopGame() {
     gameRunning = false;
 
     if (animationId) {
-        cancelAnimationFrame(animationId);
+
+        cancelAnimationFrame(
+            animationId
+        );
+
         animationId = null;
     }
 
     if (cleanupCurrentGame) {
+
         try {
+
             cleanupCurrentGame();
+
         } catch {
             // Ignore cleanup errors.
         }
@@ -560,7 +734,8 @@ function gameLoop(timestamp) {
         return;
     }
 
-    let delta = timestamp - lastFrameTime;
+    let delta =
+        timestamp - lastFrameTime;
 
     if (!Number.isFinite(delta)) {
         delta = 16.67;
@@ -575,10 +750,13 @@ function gameLoop(timestamp) {
     gameTime += dt;
 
     updateGame(dt);
+
     drawGame();
 
     animationId =
-        requestAnimationFrame(gameLoop);
+        requestAnimationFrame(
+            gameLoop
+        );
 }
 
 
@@ -591,51 +769,59 @@ function updateGame(dt) {
     switch (currentGame) {
 
         case "racing":
-            if (racingGame.update) {
-                racingGame.update(dt);
-            }
+            racingGame.update(dt);
             break;
 
         case "fighting":
-            if (fightingGame.update) {
-                fightingGame.update(dt);
-            }
+            fightingGame.update(dt);
             break;
 
         case "space":
-            if (spaceGame.update) {
-                spaceGame.update(dt);
-            }
+            spaceGame.update(dt);
             break;
 
         case "runner":
-            if (runnerGame.update) {
-                runnerGame.update(dt);
-            }
+            runnerGame.update(dt);
             break;
 
         case "penalty":
-            if (penaltyGame.update) {
-                penaltyGame.update(dt);
-            }
+            penaltyGame.update(dt);
             break;
 
         case "basketball":
-            if (basketballGame.update) {
-                basketballGame.update(dt);
-            }
+            basketballGame.update(dt);
             break;
 
         case "archery":
-            if (archeryGame.update) {
-                archeryGame.update(dt);
-            }
+            archeryGame.update(dt);
             break;
 
         case "target":
-            if (targetGame.update) {
-                targetGame.update(dt);
-            }
+            targetGame.update(dt);
+            break;
+
+        case "pipe":
+            pipeGame.update(dt);
+            break;
+
+        case "traffic":
+            trafficGame.update(dt);
+            break;
+
+        case "lights":
+            lightsGame.update(dt);
+            break;
+
+        case "stack":
+            stackGame.update(dt);
+            break;
+
+        case "gravity":
+            gravityGame.update(dt);
+            break;
+
+        case "treasure":
+            treasureGame.update(dt);
             break;
     }
 }
@@ -680,6 +866,30 @@ function drawGame() {
         case "target":
             targetGame.draw();
             break;
+
+        case "pipe":
+            pipeGame.draw();
+            break;
+
+        case "traffic":
+            trafficGame.draw();
+            break;
+
+        case "lights":
+            lightsGame.draw();
+            break;
+
+        case "stack":
+            stackGame.draw();
+            break;
+
+        case "gravity":
+            gravityGame.draw();
+            break;
+
+        case "treasure":
+            treasureGame.draw();
+            break;
     }
 }
 
@@ -693,6 +903,7 @@ function drawPreview(game) {
     clearCanvas();
 
     ctx.fillStyle = "#050914";
+
     ctx.fillRect(
         0,
         0,
@@ -705,13 +916,16 @@ function drawPreview(game) {
     ctx.textAlign = "center";
 
     ctx.font = "80px sans-serif";
+
     ctx.fillText(
         info.icon,
         CANVAS_WIDTH / 2,
         CANVAS_HEIGHT / 2 - 20
     );
 
-    ctx.font = "bold 28px sans-serif";
+    ctx.font =
+        "bold 28px sans-serif";
+
     ctx.fillStyle = "#ffffff";
 
     ctx.fillText(
@@ -721,6 +935,7 @@ function drawPreview(game) {
     );
 
     ctx.font = "16px sans-serif";
+
     ctx.fillStyle = "#8f9ab5";
 
     ctx.fillText(
@@ -745,6 +960,7 @@ function createControl(
         document.createElement("button");
 
     button.type = "button";
+
     button.className =
         `control-btn ${className}`;
 
@@ -755,7 +971,9 @@ function createControl(
         button.addEventListener(
             "pointerdown",
             event => {
+
                 event.preventDefault();
+
                 callback("down");
             }
         );
@@ -763,7 +981,9 @@ function createControl(
         button.addEventListener(
             "pointerup",
             event => {
+
                 event.preventDefault();
+
                 callback("up");
             }
         );
@@ -771,7 +991,9 @@ function createControl(
         button.addEventListener(
             "pointercancel",
             event => {
+
                 event.preventDefault();
+
                 callback("up");
             }
         );
@@ -779,6 +1001,7 @@ function createControl(
         button.addEventListener(
             "pointerleave",
             event => {
+
                 if (event.buttons) {
                     callback("up");
                 }
@@ -796,12 +1019,18 @@ function setupControls(game) {
 
     gameControls.innerHTML = "";
 
+
+    /* =====================================================
+       OLD GAMES
+       ===================================================== */
+
     if (game === "racing") {
 
         createControl(
             "◀",
             "",
             state => {
+
                 keyState.ArrowLeft =
                     state === "down";
             }
@@ -811,6 +1040,7 @@ function setupControls(game) {
             "🚗",
             "large",
             state => {
+
                 keyState.ArrowUp =
                     state === "down";
             }
@@ -820,6 +1050,7 @@ function setupControls(game) {
             "▶",
             "",
             state => {
+
                 keyState.ArrowRight =
                     state === "down";
             }
@@ -833,6 +1064,7 @@ function setupControls(game) {
             "⬅️",
             "",
             state => {
+
                 keyState.ArrowLeft =
                     state === "down";
             }
@@ -842,6 +1074,7 @@ function setupControls(game) {
             "👊",
             "large",
             state => {
+
                 if (state === "down") {
                     fightingGame.punch();
                 }
@@ -852,6 +1085,7 @@ function setupControls(game) {
             "➡️",
             "",
             state => {
+
                 keyState.ArrowRight =
                     state === "down";
             }
@@ -865,6 +1099,7 @@ function setupControls(game) {
             "◀",
             "",
             state => {
+
                 keyState.ArrowLeft =
                     state === "down";
             }
@@ -874,6 +1109,7 @@ function setupControls(game) {
             "🔥 FIRE",
             "large",
             state => {
+
                 if (state === "down") {
                     spaceGame.shoot();
                 }
@@ -884,6 +1120,7 @@ function setupControls(game) {
             "▶",
             "",
             state => {
+
                 keyState.ArrowRight =
                     state === "down";
             }
@@ -897,6 +1134,7 @@ function setupControls(game) {
             "⬆️ JUMP",
             "large",
             state => {
+
                 if (state === "down") {
                     runnerGame.jump();
                 }
@@ -933,6 +1171,7 @@ function setupControls(game) {
             "🏀 SHOOT",
             "large",
             state => {
+
                 if (state === "down") {
                     basketballGame.shoot();
                 }
@@ -947,6 +1186,7 @@ function setupControls(game) {
             "🏹 FIRE",
             "large",
             state => {
+
                 if (state === "down") {
                     archeryGame.shoot();
                 }
@@ -961,12 +1201,222 @@ function setupControls(game) {
             "🎯 SHOOT",
             "large",
             state => {
+
                 if (state === "down") {
+
                     targetGame.shoot(
                         pointerState.x,
                         pointerState.y
                     );
                 }
+            }
+        );
+    }
+
+
+    /* =====================================================
+       NEW GAMES
+       ===================================================== */
+
+    if (game === "pipe") {
+
+        createControl(
+            "↺ ROTATE",
+            "large",
+            state => {
+
+                if (state === "down") {
+                    pipeGame.rotateSelected(-1);
+                }
+            }
+        );
+
+        createControl(
+            "↻ ROTATE",
+            "large",
+            state => {
+
+                if (state === "down") {
+                    pipeGame.rotateSelected(1);
+                }
+            }
+        );
+    }
+
+
+    if (game === "traffic") {
+
+        createControl(
+            "⬅️",
+            "",
+            state => {
+                keyState.ArrowLeft =
+                    state === "down";
+            }
+        );
+
+        createControl(
+            "⬆️",
+            "",
+            state => {
+                keyState.ArrowUp =
+                    state === "down";
+            }
+        );
+
+        createControl(
+            "⬇️",
+            "",
+            state => {
+                keyState.ArrowDown =
+                    state === "down";
+            }
+        );
+
+        createControl(
+            "➡️",
+            "",
+            state => {
+                keyState.ArrowRight =
+                    state === "down";
+            }
+        );
+    }
+
+
+    if (game === "lights") {
+
+        createControl(
+            "💡 TAP A TILE",
+            "large",
+            state => {
+
+                if (state === "down") {
+
+                    lightsGame.tap(
+                        pointerState.x,
+                        pointerState.y
+                    );
+                }
+            }
+        );
+    }
+
+
+    if (game === "stack") {
+
+        createControl(
+            "🏗️ DROP",
+            "large",
+            state => {
+
+                if (state === "down") {
+                    stackGame.drop();
+                }
+            }
+        );
+    }
+
+
+    if (game === "gravity") {
+
+        createControl(
+            "⬆️",
+            "",
+            state => {
+
+                if (state === "down") {
+                    gravityGame.setGravity(
+                        0,
+                        -1
+                    );
+                }
+            }
+        );
+
+        createControl(
+            "⬅️",
+            "",
+            state => {
+
+                if (state === "down") {
+                    gravityGame.setGravity(
+                        -1,
+                        0
+                    );
+                }
+            }
+        );
+
+        createControl(
+            "⬇️",
+            "",
+            state => {
+
+                if (state === "down") {
+                    gravityGame.setGravity(
+                        0,
+                        1
+                    );
+                }
+            }
+        );
+
+        createControl(
+            "➡️",
+            "",
+            state => {
+
+                if (state === "down") {
+                    gravityGame.setGravity(
+                        1,
+                        0
+                    );
+                }
+            }
+        );
+    }
+
+
+    if (game === "treasure") {
+
+        createControl(
+            "⬅️",
+            "",
+            state => {
+
+                keyState.ArrowLeft =
+                    state === "down";
+            }
+        );
+
+        createControl(
+            "⬆️",
+            "",
+            state => {
+
+                keyState.ArrowUp =
+                    state === "down";
+            }
+        );
+
+        createControl(
+            "⬇️",
+            "",
+            state => {
+
+                keyState.ArrowDown =
+                    state === "down";
+            }
+        );
+
+        createControl(
+            "➡️",
+            "",
+            state => {
+
+                keyState.ArrowRight =
+                    state === "down";
             }
         );
     }
@@ -995,6 +1445,7 @@ window.addEventListener(
             event.preventDefault();
         }
 
+
         if (
             currentGame === "runner" &&
             (
@@ -1005,12 +1456,14 @@ window.addEventListener(
             runnerGame.jump();
         }
 
+
         if (
             currentGame === "space" &&
             event.key === " "
         ) {
             spaceGame.shoot();
         }
+
 
         if (
             currentGame === "fighting" &&
@@ -1022,6 +1475,7 @@ window.addEventListener(
             fightingGame.punch();
         }
 
+
         if (
             currentGame === "basketball" &&
             event.key === " "
@@ -1029,12 +1483,14 @@ window.addEventListener(
             basketballGame.shoot();
         }
 
+
         if (
             currentGame === "archery" &&
             event.key === " "
         ) {
             archeryGame.shoot();
         }
+
 
         if (
             currentGame === "target" &&
@@ -1044,6 +1500,72 @@ window.addEventListener(
                 pointerState.x,
                 pointerState.y
             );
+        }
+
+
+        /* NEW GAME KEYBOARD CONTROLS */
+
+        if (currentGame === "pipe") {
+
+            if (event.key === "Enter") {
+                pipeGame.rotateSelected(1);
+            }
+
+            if (event.key === "q") {
+                pipeGame.rotateSelected(-1);
+            }
+
+            if (event.key === "e") {
+                pipeGame.rotateSelected(1);
+            }
+
+            if (
+                event.key.startsWith("Arrow")
+            ) {
+                pipeGame.moveSelection(
+                    event.key
+                );
+            }
+        }
+
+
+        if (currentGame === "stack") {
+
+            if (event.key === " ") {
+                stackGame.drop();
+            }
+        }
+
+
+        if (currentGame === "gravity") {
+
+            if (event.key === "ArrowUp") {
+                gravityGame.setGravity(
+                    0,
+                    -1
+                );
+            }
+
+            if (event.key === "ArrowDown") {
+                gravityGame.setGravity(
+                    0,
+                    1
+                );
+            }
+
+            if (event.key === "ArrowLeft") {
+                gravityGame.setGravity(
+                    -1,
+                    0
+                );
+            }
+
+            if (event.key === "ArrowRight") {
+                gravityGame.setGravity(
+                    1,
+                    0
+                );
+            }
         }
     }
 );
@@ -1069,19 +1591,46 @@ gameCanvas.addEventListener(
 
         updatePointerPosition(event);
 
+
         if (currentGame === "target") {
+
             targetGame.shoot(
                 pointerState.x,
                 pointerState.y
             );
         }
 
+
         if (currentGame === "basketball") {
             basketballGame.shoot();
         }
 
+
         if (currentGame === "archery") {
             archeryGame.shoot();
+        }
+
+
+        if (currentGame === "pipe") {
+
+            pipeGame.selectTile(
+                pointerState.x,
+                pointerState.y
+            );
+        }
+
+
+        if (currentGame === "lights") {
+
+            lightsGame.tap(
+                pointerState.x,
+                pointerState.y
+            );
+        }
+
+
+        if (currentGame === "stack") {
+            stackGame.drop();
         }
     }
 );
@@ -1090,6 +1639,7 @@ gameCanvas.addEventListener(
 gameCanvas.addEventListener(
     "pointermove",
     event => {
+
         updatePointerPosition(event);
     }
 );
@@ -1098,6 +1648,7 @@ gameCanvas.addEventListener(
 gameCanvas.addEventListener(
     "pointerup",
     () => {
+
         pointerState.down = false;
     }
 );
@@ -1106,6 +1657,7 @@ gameCanvas.addEventListener(
 gameCanvas.addEventListener(
     "pointercancel",
     () => {
+
         pointerState.down = false;
     }
 );
@@ -1145,7 +1697,8 @@ const racingGame = {
 
         g.speed += dt * 3;
 
-        g.roadOffset += g.speed * dt;
+        g.roadOffset +=
+            g.speed * dt;
 
         if (g.roadOffset > 80) {
             g.roadOffset -= 80;
@@ -1154,11 +1707,13 @@ const racingGame = {
         const moveSpeed = 360;
 
         if (keyState.ArrowLeft) {
-            g.player.x -= moveSpeed * dt;
+            g.player.x -=
+                moveSpeed * dt;
         }
 
         if (keyState.ArrowRight) {
-            g.player.x += moveSpeed * dt;
+            g.player.x +=
+                moveSpeed * dt;
         }
 
         g.player.x = clamp(
@@ -1174,58 +1729,85 @@ const racingGame = {
             g.spawnTimer =
                 Math.max(
                     0.35,
-                    0.85 - gameTime * 0.008
+                    0.85 -
+                    gameTime * 0.008
                 );
 
-            const lanes = [310, 410, 510];
+            const lanes = [
+                310,
+                410,
+                510
+            ];
 
             const lane =
-                lanes[randomInt(0, lanes.length - 1)];
+                lanes[
+                    randomInt(
+                        0,
+                        lanes.length - 1
+                    )
+                ];
 
             g.cars.push({
                 x: lane,
                 y: -100,
                 width: 55,
                 height: 95,
-                speed: g.speed + random(30, 100),
-                type: randomInt(0, 2)
+                speed:
+                    g.speed +
+                    random(30, 100),
+                type:
+                    randomInt(0, 2)
             });
         }
 
         for (const car of g.cars) {
 
-            car.y += car.speed * dt;
+            car.y +=
+                car.speed * dt;
 
             if (
                 rectCollision(
                     {
-                        x: g.player.x - 22,
-                        y: g.player.y - 40,
+                        x:
+                            g.player.x - 22,
+                        y:
+                            g.player.y - 40,
                         width: 44,
                         height: 80
                     },
                     car
                 )
             ) {
+
                 gameOver();
+
                 return;
             }
         }
 
         g.cars =
             g.cars.filter(car => {
-                if (car.y > CANVAS_HEIGHT + 120) {
+
+                if (
+                    car.y >
+                    CANVAS_HEIGHT + 120
+                ) {
+
                     addScore(1);
+
                     return false;
                 }
 
                 return true;
             });
 
-        g.distance += g.speed * dt;
+        g.distance +=
+            g.speed * dt;
 
         if (g.distance >= 500) {
+
             g.distance = 0;
+
             addScore(1);
         }
     },
@@ -1237,17 +1819,14 @@ const racingGame = {
 
         clearCanvas();
 
-        /* Sky */
-
         ctx.fillStyle = "#101a31";
+
         ctx.fillRect(
             0,
             0,
             CANVAS_WIDTH,
             CANVAS_HEIGHT
         );
-
-        /* Grass */
 
         ctx.fillStyle = "#162b24";
 
@@ -1265,8 +1844,6 @@ const racingGame = {
             CANVAS_HEIGHT
         );
 
-        /* Road */
-
         ctx.fillStyle = "#242936";
 
         ctx.fillRect(
@@ -1275,8 +1852,6 @@ const racingGame = {
             460,
             CANVAS_HEIGHT
         );
-
-        /* Road borders */
 
         ctx.fillStyle = "#eeeeee";
 
@@ -1293,8 +1868,6 @@ const racingGame = {
             7,
             CANVAS_HEIGHT
         );
-
-        /* Lane lines */
 
         ctx.fillStyle = "#d6d6d6";
 
@@ -1318,8 +1891,6 @@ const racingGame = {
                 45
             );
         }
-
-        /* Traffic */
 
         for (const car of g.cars) {
 
@@ -1382,8 +1953,6 @@ const racingGame = {
                 18
             );
         }
-
-        /* Player car */
 
         ctx.fillStyle = "#6c63ff";
 
@@ -1488,21 +2057,31 @@ const fightingGame = {
         }
 
         g.player.x =
-            clamp(g.player.x, 140, 520);
+            clamp(
+                g.player.x,
+                140,
+                520
+            );
 
         g.attackTimer =
-            Math.max(0, g.attackTimer - dt);
+            Math.max(
+                0,
+                g.attackTimer - dt
+            );
 
         g.enemyAttackTimer -= dt;
 
-        if (g.enemyAttackTimer <= 0) {
+        if (
+            g.enemyAttackTimer <= 0
+        ) {
 
             g.enemyAttackTimer =
                 random(1.0, 1.8);
 
             const closeEnough =
                 Math.abs(
-                    g.enemy.x - g.player.x
+                    g.enemy.x -
+                    g.player.x
                 ) < 150;
 
             if (closeEnough) {
@@ -1512,15 +2091,26 @@ const fightingGame = {
 
                 g.hitFlash = 0.15;
 
-                if (g.player.health <= 0) {
+                if (
+                    g.player.health <= 0
+                ) {
+
                     gameOver();
+
                     return;
                 }
+
             } else {
 
-                if (g.enemy.x > g.player.x) {
+                if (
+                    g.enemy.x >
+                    g.player.x
+                ) {
+
                     g.enemy.x -= 35;
+
                 } else {
+
                     g.enemy.x += 35;
                 }
             }
@@ -1542,7 +2132,8 @@ const fightingGame = {
 
         const d =
             Math.abs(
-                this.enemy.x - this.player.x
+                this.enemy.x -
+                this.player.x
             );
 
         if (d < 155) {
@@ -1552,8 +2143,12 @@ const fightingGame = {
 
             addScore(5);
 
-            if (this.enemy.health <= 0) {
+            if (
+                this.enemy.health <= 0
+            ) {
+
                 addScore(30);
+
                 gameOver();
             }
         }
@@ -1565,8 +2160,6 @@ const fightingGame = {
         const g = this;
 
         clearCanvas();
-
-        /* Arena */
 
         ctx.fillStyle = "#111a31";
 
@@ -1586,12 +2179,16 @@ const fightingGame = {
             200
         );
 
-        /* Ring ropes */
-
         ctx.strokeStyle = "#59647f";
         ctx.lineWidth = 5;
 
-        for (const y of [250, 300, 350]) {
+        for (
+            const y of [
+                250,
+                300,
+                350
+            ]
+        ) {
 
             ctx.beginPath();
 
@@ -1600,8 +2197,6 @@ const fightingGame = {
 
             ctx.stroke();
         }
-
-        /* Health bars */
 
         drawHealthBar(
             80,
@@ -1625,9 +2220,11 @@ const fightingGame = {
 
         ctx.fillStyle = "#ffffff";
 
-        ctx.font = "bold 15px sans-serif";
+        ctx.font =
+            "bold 15px sans-serif";
 
         ctx.textAlign = "left";
+
         ctx.fillText(
             "PLAYER",
             80,
@@ -1635,13 +2232,12 @@ const fightingGame = {
         );
 
         ctx.textAlign = "right";
+
         ctx.fillText(
             "OPPONENT",
             820,
             52
         );
-
-        /* Player */
 
         drawFighter(
             g.player.x,
@@ -1649,8 +2245,6 @@ const fightingGame = {
             "#6c63ff",
             g.attackTimer > 0
         );
-
-        /* Enemy */
 
         drawFighter(
             g.enemy.x,
@@ -1702,11 +2296,12 @@ function drawHealthBar(
     roundedRect(
         x,
         y,
-        width * clamp(
-            health / maxHealth,
-            0,
-            1
-        ),
+        width *
+            clamp(
+                health / maxHealth,
+                0,
+                1
+            ),
         height,
         10
     );
@@ -1725,6 +2320,7 @@ function drawFighter(
     ctx.fillStyle = color;
 
     ctx.beginPath();
+
     ctx.arc(
         x,
         y - 95,
@@ -1759,9 +2355,14 @@ function drawFighter(
 
     ctx.beginPath();
 
-    ctx.moveTo(x - 25, y - 45);
+    ctx.moveTo(
+        x - 25,
+        y - 45
+    );
+
     ctx.lineTo(
-        x - (attacking ? 70 : 45),
+        x -
+        (attacking ? 70 : 45),
         y - 20
     );
 
@@ -1769,9 +2370,14 @@ function drawFighter(
 
     ctx.beginPath();
 
-    ctx.moveTo(x + 25, y - 45);
+    ctx.moveTo(
+        x + 25,
+        y - 45
+    );
+
     ctx.lineTo(
-        x + (attacking ? 75 : 45),
+        x +
+        (attacking ? 75 : 45),
         y - 20
     );
 
@@ -1781,15 +2387,29 @@ function drawFighter(
 
     ctx.beginPath();
 
-    ctx.moveTo(x - 15, y + 10);
-    ctx.lineTo(x - 25, y + 70);
+    ctx.moveTo(
+        x - 15,
+        y + 10
+    );
+
+    ctx.lineTo(
+        x - 25,
+        y + 70
+    );
 
     ctx.stroke();
 
     ctx.beginPath();
 
-    ctx.moveTo(x + 15, y + 10);
-    ctx.lineTo(x + 25, y + 70);
+    ctx.moveTo(
+        x + 15,
+        y + 10
+    );
+
+    ctx.lineTo(
+        x + 25,
+        y + 70
+    );
 
     ctx.stroke();
 }
@@ -1834,28 +2454,48 @@ const spaceGame = {
 
         for (const star of g.stars) {
 
-            star.y += star.speed * dt;
+            star.y +=
+                star.speed * dt;
 
-            if (star.y > CANVAS_HEIGHT) {
+            if (
+                star.y >
+                CANVAS_HEIGHT
+            ) {
+
                 star.y = 0;
+
                 star.x =
-                    random(0, CANVAS_WIDTH);
+                    random(
+                        0,
+                        CANVAS_WIDTH
+                    );
             }
         }
 
         if (keyState.ArrowLeft) {
-            g.player.x -= 330 * dt;
+
+            g.player.x -=
+                330 * dt;
         }
 
         if (keyState.ArrowRight) {
-            g.player.x += 330 * dt;
+
+            g.player.x +=
+                330 * dt;
         }
 
         g.player.x =
-            clamp(g.player.x, 30, 870);
+            clamp(
+                g.player.x,
+                30,
+                870
+            );
 
         g.fireTimer =
-            Math.max(0, g.fireTimer - dt);
+            Math.max(
+                0,
+                g.fireTimer - dt
+            );
 
         g.spawnTimer -= dt;
 
@@ -1864,26 +2504,43 @@ const spaceGame = {
             g.spawnTimer =
                 Math.max(
                     0.25,
-                    0.8 - gameTime * 0.006
+                    0.8 -
+                    gameTime * 0.006
                 );
 
             g.enemies.push({
-                x: random(40, 860),
+
+                x:
+                    random(
+                        40,
+                        860
+                    ),
+
                 y: -30,
+
                 radius: 20,
-                speed: random(90, 150)
-                    + gameTime * 2,
+
+                speed:
+                    random(
+                        90,
+                        150
+                    ) +
+                    gameTime * 2,
+
                 health: 1
             });
         }
 
         for (const bullet of g.bullets) {
-            bullet.y -= 600 * dt;
+
+            bullet.y -=
+                600 * dt;
         }
 
         for (const enemy of g.enemies) {
 
-            enemy.y += enemy.speed * dt;
+            enemy.y +=
+                enemy.speed * dt;
 
             if (
                 distance(
@@ -1891,7 +2548,8 @@ const spaceGame = {
                     enemy.y,
                     g.player.x,
                     g.player.y
-                ) < enemy.radius + 18
+                ) <
+                enemy.radius + 18
             ) {
 
                 g.player.health -= 20;
@@ -1899,8 +2557,12 @@ const spaceGame = {
                 enemy.y =
                     CANVAS_HEIGHT + 100;
 
-                if (g.player.health <= 0) {
+                if (
+                    g.player.health <= 0
+                ) {
+
                     gameOver();
+
                     return;
                 }
             }
@@ -1908,7 +2570,9 @@ const spaceGame = {
 
         for (const bullet of g.bullets) {
 
-            for (const enemy of g.enemies) {
+            for (
+                const enemy of g.enemies
+            ) {
 
                 if (bullet.hit) {
                     continue;
@@ -1921,13 +2585,18 @@ const spaceGame = {
                         enemy.x,
                         enemy.y
                     ) <
-                    enemy.radius + bullet.radius
+                    enemy.radius +
+                    bullet.radius
                 ) {
 
                     bullet.hit = true;
+
                     enemy.health--;
 
-                    if (enemy.health <= 0) {
+                    if (
+                        enemy.health <= 0
+                    ) {
+
                         enemy.y =
                             CANVAS_HEIGHT + 100;
 
@@ -1965,9 +2634,15 @@ const spaceGame = {
         this.fireTimer = 0.18;
 
         this.bullets.push({
-            x: this.player.x,
-            y: this.player.y - 25,
+
+            x:
+                this.player.x,
+
+            y:
+                this.player.y - 25,
+
             radius: 5,
+
             hit: false
         });
     },
@@ -1988,13 +2663,14 @@ const spaceGame = {
             CANVAS_HEIGHT
         );
 
-        /* Stars */
-
         ctx.fillStyle = "#ffffff";
 
-        for (const star of g.stars) {
+        for (
+            const star of g.stars
+        ) {
 
-            ctx.globalAlpha = star.alpha;
+            ctx.globalAlpha =
+                star.alpha;
 
             ctx.fillRect(
                 star.x,
@@ -2006,11 +2682,11 @@ const spaceGame = {
 
         ctx.globalAlpha = 1;
 
-        /* Bullets */
-
         ctx.fillStyle = "#7ff5ff";
 
-        for (const bullet of g.bullets) {
+        for (
+            const bullet of g.bullets
+        ) {
 
             ctx.beginPath();
 
@@ -2025,9 +2701,9 @@ const spaceGame = {
             ctx.fill();
         }
 
-        /* Enemies */
-
-        for (const enemy of g.enemies) {
+        for (
+            const enemy of g.enemies
+        ) {
 
             ctx.fillStyle = "#ff5870";
 
@@ -2058,8 +2734,6 @@ const spaceGame = {
             ctx.fill();
         }
 
-        /* Player ship */
-
         ctx.fillStyle = "#6c63ff";
 
         ctx.beginPath();
@@ -2088,8 +2762,6 @@ const spaceGame = {
 
         ctx.fill();
 
-        /* Health */
-
         drawHealthBar(
             20,
             20,
@@ -2106,13 +2778,17 @@ const spaceGame = {
 function startSpaceShooter() {
 
     spaceGame.player = {
+
         x: 450,
+
         y: 520,
+
         health: 100
     };
 
     spaceGame.bullets = [];
     spaceGame.enemies = [];
+
     spaceGame.spawnTimer = 0.5;
     spaceGame.fireTimer = 0;
 
@@ -2121,11 +2797,27 @@ function startSpaceShooter() {
     for (let i = 0; i < 90; i++) {
 
         spaceGame.stars.push({
-            x: random(0, CANVAS_WIDTH),
-            y: random(0, CANVAS_HEIGHT),
-            size: random(1, 3),
-            speed: random(15, 60),
-            alpha: random(0.3, 1)
+
+            x:
+                random(
+                    0,
+                    CANVAS_WIDTH
+                ),
+
+            y:
+                random(
+                    0,
+                    CANVAS_HEIGHT
+                ),
+
+            size:
+                random(1, 3),
+
+            speed:
+                random(15, 60),
+
+            alpha:
+                random(0.3, 1)
         });
     }
 
@@ -2149,12 +2841,15 @@ const runnerGame = {
 
         const g = this;
 
-        g.speed += dt * 3;
+        g.speed +=
+            dt * 3;
 
         g.groundOffset +=
             g.speed * dt;
 
-        if (g.groundOffset > 50) {
+        if (
+            g.groundOffset > 50
+        ) {
             g.groundOffset -= 50;
         }
 
@@ -2164,29 +2859,44 @@ const runnerGame = {
         g.player.y +=
             g.player.vy * dt;
 
-        if (g.player.y >= 470) {
+        if (
+            g.player.y >= 470
+        ) {
 
             g.player.y = 470;
+
             g.player.vy = 0;
+
             g.player.grounded = true;
         }
 
         g.spawnTimer -= dt;
 
-        if (g.spawnTimer <= 0) {
+        if (
+            g.spawnTimer <= 0
+        ) {
 
             g.spawnTimer =
                 random(0.8, 1.5);
 
             g.obstacles.push({
+
                 x: 930,
+
                 y: 425,
-                width: random(25, 45),
-                height: random(45, 70)
+
+                width:
+                    random(25, 45),
+
+                height:
+                    random(45, 70)
             });
         }
 
-        for (const obstacle of g.obstacles) {
+        for (
+            const obstacle of
+            g.obstacles
+        ) {
 
             obstacle.x -=
                 g.speed * dt;
@@ -2194,9 +2904,14 @@ const runnerGame = {
             if (
                 rectCollision(
                     {
-                        x: g.player.x - 20,
-                        y: g.player.y - 55,
+                        x:
+                            g.player.x - 20,
+
+                        y:
+                            g.player.y - 55,
+
                         width: 40,
+
                         height: 55
                     },
                     obstacle
@@ -2204,6 +2919,7 @@ const runnerGame = {
             ) {
 
                 gameOver();
+
                 return;
             }
         }
@@ -2217,7 +2933,9 @@ const runnerGame = {
                         obstacle.width <
                         0
                     ) {
+
                         addScore(2);
+
                         return false;
                     }
 
@@ -2237,7 +2955,9 @@ const runnerGame = {
         }
 
         this.player.vy = -650;
-        this.player.grounded = false;
+
+        this.player.grounded =
+            false;
     },
 
 
@@ -2247,8 +2967,6 @@ const runnerGame = {
 
         clearCanvas();
 
-        /* Sky */
-
         ctx.fillStyle = "#101a31";
 
         ctx.fillRect(
@@ -2257,8 +2975,6 @@ const runnerGame = {
             CANVAS_WIDTH,
             CANVAS_HEIGHT
         );
-
-        /* Moon */
 
         ctx.fillStyle = "#fff3bd";
 
@@ -2274,8 +2990,6 @@ const runnerGame = {
 
         ctx.fill();
 
-        /* Ground */
-
         ctx.fillStyle = "#182e29";
 
         ctx.fillRect(
@@ -2285,30 +2999,42 @@ const runnerGame = {
             100
         );
 
-        /* Ground lines */
-
         ctx.strokeStyle = "#29493f";
+
         ctx.lineWidth = 3;
 
         for (
-            let x = -50 + g.groundOffset;
-            x < CANVAS_WIDTH;
+            let x =
+                -50 +
+                g.groundOffset;
+
+            x <
+            CANVAS_WIDTH;
+
             x += 50
         ) {
 
             ctx.beginPath();
 
-            ctx.moveTo(x, 520);
-            ctx.lineTo(x + 25, 520);
+            ctx.moveTo(
+                x,
+                520
+            );
+
+            ctx.lineTo(
+                x + 25,
+                520
+            );
 
             ctx.stroke();
         }
 
-        /* Obstacles */
-
         ctx.fillStyle = "#ff6a59";
 
-        for (const obstacle of g.obstacles) {
+        for (
+            const obstacle of
+            g.obstacles
+        ) {
 
             roundedRect(
                 obstacle.x,
@@ -2320,8 +3046,6 @@ const runnerGame = {
 
             ctx.fill();
         }
-
-        /* Player */
 
         ctx.fillStyle = "#6c63ff";
 
@@ -2367,15 +3091,22 @@ const runnerGame = {
 function startRunner() {
 
     runnerGame.player = {
+
         x: 150,
+
         y: 470,
+
         vy: 0,
+
         grounded: true
     };
 
     runnerGame.obstacles = [];
+
     runnerGame.groundOffset = 0;
+
     runnerGame.spawnTimer = 1;
+
     runnerGame.speed = 320;
 
     return null;
@@ -2402,7 +3133,9 @@ const penaltyGame = {
 
         this.keeper.x =
             450 +
-            Math.sin(gameTime * 2.3) * 180;
+            Math.sin(
+                gameTime * 2.3
+            ) * 180;
     },
 
 
@@ -2420,9 +3153,13 @@ const penaltyGame = {
         this.shots++;
 
         const targetX = {
+
             left: 320,
+
             center: 450,
+
             right: 580
+
         }[direction];
 
         const keeperX =
@@ -2430,12 +3167,14 @@ const penaltyGame = {
 
         const saved =
             Math.abs(
-                targetX - keeperX
+                targetX -
+                keeperX
             ) < 85;
 
         if (saved) {
 
-            this.message = "🧤 SAVED!";
+            this.message =
+                "🧤 SAVED!";
 
         } else {
 
@@ -2443,14 +3182,18 @@ const penaltyGame = {
 
             addScore(10);
 
-            this.message = "⚽ GOAL!";
+            this.message =
+                "⚽ GOAL!";
         }
 
         if (this.shots >= 10) {
+
             setTimeout(() => {
+
                 if (gameRunning) {
                     gameOver();
                 }
+
             }, 500);
         }
     },
@@ -2462,8 +3205,6 @@ const penaltyGame = {
 
         clearCanvas();
 
-        /* Stadium */
-
         ctx.fillStyle = "#10182c";
 
         ctx.fillRect(
@@ -2472,8 +3213,6 @@ const penaltyGame = {
             CANVAS_WIDTH,
             CANVAS_HEIGHT
         );
-
-        /* Grass */
 
         ctx.fillStyle = "#1e5739";
 
@@ -2484,9 +3223,8 @@ const penaltyGame = {
             430
         );
 
-        /* Goal */
-
         ctx.strokeStyle = "#ffffff";
+
         ctx.lineWidth = 9;
 
         ctx.strokeRect(
@@ -2496,34 +3234,52 @@ const penaltyGame = {
             210
         );
 
-        /* Net */
-
         ctx.strokeStyle =
             "rgba(255,255,255,0.18)";
 
         ctx.lineWidth = 2;
 
-        for (let x = 290; x < 630; x += 30) {
+        for (
+            let x = 290;
+            x < 630;
+            x += 30
+        ) {
 
             ctx.beginPath();
 
-            ctx.moveTo(x, 100);
-            ctx.lineTo(x, 290);
+            ctx.moveTo(
+                x,
+                100
+            );
+
+            ctx.lineTo(
+                x,
+                290
+            );
 
             ctx.stroke();
         }
 
-        for (let y = 110; y < 290; y += 30) {
+        for (
+            let y = 110;
+            y < 290;
+            y += 30
+        ) {
 
             ctx.beginPath();
 
-            ctx.moveTo(280, y);
-            ctx.lineTo(620, y);
+            ctx.moveTo(
+                280,
+                y
+            );
+
+            ctx.lineTo(
+                620,
+                y
+            );
 
             ctx.stroke();
         }
-
-        /* Keeper */
 
         ctx.fillStyle = "#ff5d73";
 
@@ -2551,8 +3307,6 @@ const penaltyGame = {
 
         ctx.fill();
 
-        /* Ball */
-
         ctx.fillStyle = "#ffffff";
 
         ctx.beginPath();
@@ -2567,21 +3321,22 @@ const penaltyGame = {
 
         ctx.fill();
 
-        /* Text */
-
         ctx.textAlign = "center";
 
         ctx.fillStyle = "#ffffff";
 
-        ctx.font = "bold 26px sans-serif";
+        ctx.font =
+            "bold 26px sans-serif";
 
         ctx.fillText(
-            g.message || "Choose a direction",
+            g.message ||
+            "Choose a direction",
             450,
             55
         );
 
-        ctx.font = "14px sans-serif";
+        ctx.font =
+            "14px sans-serif";
 
         ctx.fillStyle = "#b7c0d5";
 
@@ -2597,8 +3352,11 @@ const penaltyGame = {
 function startPenalty() {
 
     penaltyGame.shots = 0;
+
     penaltyGame.goals = 0;
+
     penaltyGame.cooldown = 0;
+
     penaltyGame.message = "";
 
     penaltyGame.keeper = {
@@ -2625,13 +3383,17 @@ const basketballGame = {
 
         const g = this;
 
-        if (g.shotCooldown > 0) {
+        if (
+            g.shotCooldown > 0
+        ) {
             g.shotCooldown -= dt;
         }
 
         g.hoop.x =
             450 +
-            Math.sin(gameTime * 1.8) * 170;
+            Math.sin(
+                gameTime * 1.8
+            ) * 170;
 
         if (g.ball.active) {
 
@@ -2647,10 +3409,13 @@ const basketballGame = {
             if (
                 !g.ball.scored &&
                 g.ball.vy > 0 &&
-                g.ball.y >= g.hoop.y &&
-                g.ball.y <= g.hoop.y + 35 &&
+                g.ball.y >=
+                    g.hoop.y &&
+                g.ball.y <=
+                    g.hoop.y + 35 &&
                 Math.abs(
-                    g.ball.x - g.hoop.x
+                    g.ball.x -
+                    g.hoop.x
                 ) < 38
             ) {
 
@@ -2668,11 +3433,16 @@ const basketballGame = {
 
                 g.ball.active = false;
 
-                if (g.shots >= 10) {
+                if (
+                    g.shots >= 10
+                ) {
+
                     setTimeout(() => {
+
                         if (gameRunning) {
                             gameOver();
                         }
+
                     }, 300);
                 }
             }
@@ -2695,11 +3465,19 @@ const basketballGame = {
         this.shots++;
 
         this.ball = {
+
             x: 220,
+
             y: 500,
-            vx: random(330, 440),
-            vy: random(-680, -560),
+
+            vx:
+                random(330, 440),
+
+            vy:
+                random(-680, -560),
+
             active: true,
+
             scored: false
         };
     },
@@ -2711,8 +3489,6 @@ const basketballGame = {
 
         clearCanvas();
 
-        /* Background */
-
         ctx.fillStyle = "#10182b";
 
         ctx.fillRect(
@@ -2721,8 +3497,6 @@ const basketballGame = {
             CANVAS_WIDTH,
             CANVAS_HEIGHT
         );
-
-        /* Court */
 
         ctx.fillStyle = "#2a3150";
 
@@ -2750,8 +3524,6 @@ const basketballGame = {
 
         ctx.stroke();
 
-        /* Backboard */
-
         ctx.fillStyle = "#e7eaf2";
 
         ctx.fillRect(
@@ -2761,9 +3533,8 @@ const basketballGame = {
             8
         );
 
-        /* Rim */
-
         ctx.strokeStyle = "#ff7043";
+
         ctx.lineWidth = 8;
 
         ctx.beginPath();
@@ -2780,16 +3551,18 @@ const basketballGame = {
 
         ctx.stroke();
 
-        /* Net */
-
         ctx.strokeStyle =
             "rgba(255,255,255,0.7)";
 
         ctx.lineWidth = 2;
 
         for (
-            let x = g.hoop.x - 32;
-            x <= g.hoop.x + 32;
+            let x =
+                g.hoop.x - 32;
+
+            x <=
+                g.hoop.x + 32;
+
             x += 16
         ) {
 
@@ -2808,8 +3581,6 @@ const basketballGame = {
             ctx.stroke();
         }
 
-        /* Ball */
-
         if (g.ball.active) {
 
             ctx.fillStyle = "#f28c3c";
@@ -2826,20 +3597,6 @@ const basketballGame = {
 
             ctx.fill();
 
-            ctx.strokeStyle = "#512d18";
-            ctx.lineWidth = 2;
-
-            ctx.beginPath();
-
-            ctx.arc(
-                g.ball.x,
-                g.ball.y,
-                18,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.stroke();
         } else {
 
             ctx.fillStyle = "#f28c3c";
@@ -2858,9 +3615,11 @@ const basketballGame = {
         }
 
         ctx.fillStyle = "#ffffff";
+
         ctx.textAlign = "center";
 
-        ctx.font = "bold 20px sans-serif";
+        ctx.font =
+            "bold 20px sans-serif";
 
         ctx.fillText(
             `Shots ${g.shots}/10   •   Made ${g.made}`,
@@ -2874,19 +3633,27 @@ const basketballGame = {
 function startBasketball() {
 
     basketballGame.ball = {
+
         x: 220,
+
         y: 500,
+
         active: false,
+
         scored: false
     };
 
     basketballGame.hoop = {
+
         x: 650,
+
         y: 210
     };
 
     basketballGame.shotCooldown = 0;
+
     basketballGame.shots = 0;
+
     basketballGame.made = 0;
 
     return null;
@@ -2909,17 +3676,23 @@ const archeryGame = {
 
         const g = this;
 
-        if (g.cooldown > 0) {
+        if (
+            g.cooldown > 0
+        ) {
             g.cooldown -= dt;
         }
 
         g.target.x =
             450 +
-            Math.sin(gameTime * 1.7) * 280;
+            Math.sin(
+                gameTime * 1.7
+            ) * 280;
 
         g.target.y =
             260 +
-            Math.cos(gameTime * 1.3) * 100;
+            Math.cos(
+                gameTime * 1.3
+            ) * 100;
 
         if (g.arrow) {
 
@@ -2935,7 +3708,8 @@ const archeryGame = {
                     g.arrow.y,
                     g.target.x,
                     g.target.y
-                ) < g.target.radius;
+                ) <
+                g.target.radius;
 
             if (hit) {
 
@@ -2964,10 +3738,10 @@ const archeryGame = {
                 (
                     g.arrow.x < -50 ||
                     g.arrow.x >
-                    CANVAS_WIDTH + 50 ||
+                        CANVAS_WIDTH + 50 ||
                     g.arrow.y < -50 ||
                     g.arrow.y >
-                    CANVAS_HEIGHT + 50
+                        CANVAS_HEIGHT + 50
                 )
             ) {
                 g.arrow = null;
@@ -2975,14 +3749,17 @@ const archeryGame = {
         }
 
         if (
-            g.shots >= g.maxShots &&
+            g.shots >=
+                g.maxShots &&
             !g.arrow
         ) {
 
             setTimeout(() => {
+
                 if (gameRunning) {
                     gameOver();
                 }
+
             }, 250);
         }
     },
@@ -3006,21 +3783,34 @@ const archeryGame = {
         const startY = 480;
 
         const dx =
-            this.target.x - startX;
+            this.target.x -
+            startX;
 
         const dy =
-            this.target.y - startY;
+            this.target.y -
+            startY;
 
         const length =
-            Math.sqrt(dx * dx + dy * dy);
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
 
         const speed = 700;
 
         this.arrow = {
+
             x: startX,
+
             y: startY,
-            vx: (dx / length) * speed,
-            vy: (dy / length) * speed
+
+            vx:
+                (dx / length) *
+                speed,
+
+            vy:
+                (dy / length) *
+                speed
         };
     },
 
@@ -3031,8 +3821,6 @@ const archeryGame = {
 
         clearCanvas();
 
-        /* Background */
-
         ctx.fillStyle = "#10192d";
 
         ctx.fillRect(
@@ -3041,8 +3829,6 @@ const archeryGame = {
             CANVAS_WIDTH,
             CANVAS_HEIGHT
         );
-
-        /* Ground */
 
         ctx.fillStyle = "#1b3028";
 
@@ -3053,9 +3839,8 @@ const archeryGame = {
             80
         );
 
-        /* Bow */
-
         ctx.strokeStyle = "#c79255";
+
         ctx.lineWidth = 8;
 
         ctx.beginPath();
@@ -3071,6 +3856,7 @@ const archeryGame = {
         ctx.stroke();
 
         ctx.strokeStyle = "#eeeeee";
+
         ctx.lineWidth = 2;
 
         ctx.beginPath();
@@ -3087,34 +3873,51 @@ const archeryGame = {
 
         ctx.stroke();
 
-        /* Target */
-
         const rings = [
+
             {
-                radius: g.target.radius,
-                color: "#f5f5f5"
+                radius:
+                    g.target.radius,
+
+                color:
+                    "#f5f5f5"
             },
+
             {
                 radius: 48,
-                color: "#e64e5c"
+
+                color:
+                    "#e64e5c"
             },
+
             {
                 radius: 34,
-                color: "#f5f5f5"
+
+                color:
+                    "#f5f5f5"
             },
+
             {
                 radius: 20,
-                color: "#e64e5c"
+
+                color:
+                    "#e64e5c"
             },
+
             {
                 radius: 9,
-                color: "#ffd34e"
+
+                color:
+                    "#ffd34e"
             }
         ];
 
-        for (const ring of rings) {
+        for (
+            const ring of rings
+        ) {
 
-            ctx.fillStyle = ring.color;
+            ctx.fillStyle =
+                ring.color;
 
             ctx.beginPath();
 
@@ -3128,8 +3931,6 @@ const archeryGame = {
 
             ctx.fill();
         }
-
-        /* Arrow */
 
         if (g.arrow) {
 
@@ -3148,13 +3949,22 @@ const archeryGame = {
 
             ctx.rotate(angle);
 
-            ctx.strokeStyle = "#d7b06f";
+            ctx.strokeStyle =
+                "#d7b06f";
+
             ctx.lineWidth = 4;
 
             ctx.beginPath();
 
-            ctx.moveTo(-30, 0);
-            ctx.lineTo(30, 0);
+            ctx.moveTo(
+                -30,
+                0
+            );
+
+            ctx.lineTo(
+                30,
+                0
+            );
 
             ctx.stroke();
 
@@ -3165,7 +3975,8 @@ const archeryGame = {
 
         ctx.textAlign = "center";
 
-        ctx.font = "bold 20px sans-serif";
+        ctx.font =
+            "bold 20px sans-serif";
 
         ctx.fillText(
             `Shots ${g.shots}/${g.maxShots}`,
@@ -3179,14 +3990,20 @@ const archeryGame = {
 function startArchery() {
 
     archeryGame.target = {
+
         x: 650,
+
         y: 260,
+
         radius: 60
     };
 
     archeryGame.arrow = null;
+
     archeryGame.shots = 0;
+
     archeryGame.maxShots = 15;
+
     archeryGame.cooldown = 0;
 
     return null;
@@ -3224,10 +4041,18 @@ const targetGame = {
                 );
 
             g.target = {
-                x: random(70, 830),
-                y: random(100, 500),
-                radius: random(25, 48),
-                life: g.spawnTimer
+
+                x:
+                    random(70, 830),
+
+                y:
+                    random(100, 500),
+
+                radius:
+                    random(25, 48),
+
+                life:
+                    g.spawnTimer
             };
         }
 
@@ -3235,13 +4060,17 @@ const targetGame = {
 
             g.target.life -= dt;
 
-            if (g.target.life <= 0) {
+            if (
+                g.target.life <= 0
+            ) {
 
                 g.misses++;
 
                 g.target = null;
 
-                if (g.misses >= 5) {
+                if (
+                    g.misses >= 5
+                ) {
                     gameOver();
                 }
             }
@@ -3264,7 +4093,8 @@ const targetGame = {
                 y,
                 this.target.x,
                 this.target.y
-            ) <= this.target.radius;
+            ) <=
+            this.target.radius;
 
         if (hit) {
 
@@ -3277,7 +4107,8 @@ const targetGame = {
                 );
 
             const points =
-                d < this.target.radius * 0.3
+                d <
+                this.target.radius * 0.3
                     ? 20
                     : 10;
 
@@ -3293,7 +4124,9 @@ const targetGame = {
 
             this.misses++;
 
-            if (this.misses >= 5) {
+            if (
+                this.misses >= 5
+            ) {
                 gameOver();
             }
         }
@@ -3306,8 +4139,6 @@ const targetGame = {
 
         clearCanvas();
 
-        /* Background */
-
         ctx.fillStyle = "#080d1c";
 
         ctx.fillRect(
@@ -3317,34 +4148,52 @@ const targetGame = {
             CANVAS_HEIGHT
         );
 
-        /* Grid */
-
         ctx.strokeStyle =
             "rgba(255,255,255,0.05)";
 
         ctx.lineWidth = 1;
 
-        for (let x = 0; x <= 900; x += 50) {
+        for (
+            let x = 0;
+            x <= 900;
+            x += 50
+        ) {
 
             ctx.beginPath();
 
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, 600);
+            ctx.moveTo(
+                x,
+                0
+            );
+
+            ctx.lineTo(
+                x,
+                600
+            );
 
             ctx.stroke();
         }
 
-        for (let y = 0; y <= 600; y += 50) {
+        for (
+            let y = 0;
+            y <= 600;
+            y += 50
+        ) {
 
             ctx.beginPath();
 
-            ctx.moveTo(0, y);
-            ctx.lineTo(900, y);
+            ctx.moveTo(
+                0,
+                y
+            );
+
+            ctx.lineTo(
+                900,
+                y
+            );
 
             ctx.stroke();
         }
-
-        /* Target */
 
         if (g.target) {
 
@@ -3404,8 +4253,6 @@ const targetGame = {
 
             ctx.fill();
 
-            /* Timer ring */
-
             ctx.strokeStyle =
                 "#6c63ff";
 
@@ -3419,16 +4266,16 @@ const targetGame = {
                 g.target.radius + 8,
                 -Math.PI / 2,
                 -Math.PI / 2 +
-                Math.PI * 2 *
-                clamp(
-                    g.target.life /
-                    Math.max(
-                        g.spawnTimer,
-                        0.01
-                    ),
-                    0,
-                    1
-                )
+                    Math.PI * 2 *
+                    clamp(
+                        g.target.life /
+                            Math.max(
+                                g.spawnTimer,
+                                0.01
+                            ),
+                        0,
+                        1
+                    )
             );
 
             ctx.stroke();
@@ -3438,7 +4285,8 @@ const targetGame = {
 
         ctx.fillStyle = "#ffffff";
 
-        ctx.font = "bold 20px sans-serif";
+        ctx.font =
+            "bold 20px sans-serif";
 
         ctx.fillText(
             `🎯 Hit: ${g.targetsHit}   ❌ Miss: ${g.misses}/5`,
@@ -3452,13 +4300,2406 @@ const targetGame = {
 function startTarget() {
 
     targetGame.target = null;
+
     targetGame.targetsHit = 0;
+
     targetGame.misses = 0;
+
     targetGame.spawnTimer = 0.2;
+
     targetGame.lifetime = 1.4;
 
     return null;
 }
+
+
+/* =========================================================
+   9. PIPE CONNECT
+   ========================================================= */
+
+const pipeGame = {
+
+    size: 5,
+    tileSize: 88,
+    offsetX: 230,
+    offsetY: 80,
+
+    board: [],
+    selectedRow: 0,
+    selectedCol: 0,
+
+    moves: 0,
+    solved: false,
+
+    update() {
+        // Puzzle is input driven.
+    },
+
+
+    rotateSelected(direction) {
+
+        if (!gameRunning) {
+            return;
+        }
+
+        const tile =
+            this.board[
+                this.selectedRow
+            ][this.selectedCol];
+
+        tile.rotation =
+            (
+                tile.rotation +
+                direction +
+                4
+            ) % 4;
+
+        this.moves++;
+
+        if (this.checkSolved()) {
+
+            this.solved = true;
+
+            addScore(
+                Math.max(
+                    50,
+                    300 -
+                    this.moves * 3
+                )
+            );
+
+            showToast(
+                "🎉 Network Connected!"
+            );
+
+            setTimeout(() => {
+
+                if (gameRunning) {
+                    gameOver();
+                }
+
+            }, 700);
+        }
+    },
+
+
+    moveSelection(key) {
+
+        if (key === "ArrowUp") {
+            this.selectedRow =
+                clamp(
+                    this.selectedRow - 1,
+                    0,
+                    this.size - 1
+                );
+        }
+
+        if (key === "ArrowDown") {
+            this.selectedRow =
+                clamp(
+                    this.selectedRow + 1,
+                    0,
+                    this.size - 1
+                );
+        }
+
+        if (key === "ArrowLeft") {
+            this.selectedCol =
+                clamp(
+                    this.selectedCol - 1,
+                    0,
+                    this.size - 1
+                );
+        }
+
+        if (key === "ArrowRight") {
+            this.selectedCol =
+                clamp(
+                    this.selectedCol + 1,
+                    0,
+                    this.size - 1
+                );
+        }
+    },
+
+
+    selectTile(x, y) {
+
+        const col =
+            Math.floor(
+                (
+                    x -
+                    this.offsetX
+                ) /
+                this.tileSize
+            );
+
+        const row =
+            Math.floor(
+                (
+                    y -
+                    this.offsetY
+                ) /
+                this.tileSize
+            );
+
+        if (
+            row < 0 ||
+            row >= this.size ||
+            col < 0 ||
+            col >= this.size
+        ) {
+            return;
+        }
+
+        this.selectedRow = row;
+        this.selectedCol = col;
+
+        this.rotateSelected(1);
+    },
+
+
+    checkSolved() {
+
+        const size = this.size;
+
+        const visited =
+            Array.from(
+                {
+                    length: size
+                },
+                () =>
+                    Array(
+                        size
+                    ).fill(false)
+            );
+
+        const queue = [
+            {
+                r: 0,
+                c: 0
+            }
+        ];
+
+        visited[0][0] = true;
+
+        while (queue.length) {
+
+            const node =
+                queue.shift();
+
+            const tile =
+                this.board[
+                    node.r
+                ][node.c];
+
+            const connections =
+                this.getConnections(tile);
+
+            const directions = [
+                [-1, 0, 0, 2],
+                [0, 1, 1, 3],
+                [1, 0, 2, 0],
+                [0, -1, 3, 1]
+            ];
+
+            for (
+                const [
+                    dr,
+                    dc,
+                    dir,
+                    opposite
+                ]
+                of directions
+            ) {
+
+                if (
+                    !connections.includes(
+                        dir
+                    )
+                ) {
+                    continue;
+                }
+
+                const nr =
+                    node.r + dr;
+
+                const nc =
+                    node.c + dc;
+
+                if (
+                    nr < 0 ||
+                    nr >= size ||
+                    nc < 0 ||
+                    nc >= size
+                ) {
+                    return false;
+                }
+
+                const next =
+                    this.board[nr][nc];
+
+                const nextConnections =
+                    this.getConnections(
+                        next
+                    );
+
+                if (
+                    !nextConnections.includes(
+                        opposite
+                    )
+                ) {
+                    return false;
+                }
+
+                if (
+                    !visited[nr][nc]
+                ) {
+
+                    visited[nr][nc] = true;
+
+                    queue.push({
+                        r: nr,
+                        c: nc
+                    });
+                }
+            }
+        }
+
+        for (let r = 0; r < size; r++) {
+
+            for (
+                let c = 0;
+                c < size;
+                c++
+            ) {
+
+                if (
+                    !visited[r][c]
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    },
+
+
+    getConnections(tile) {
+
+        const base =
+            tile.type === "straight"
+                ? [1, 3]
+                : tile.type === "corner"
+                    ? [0, 1]
+                    : tile.type === "tee"
+                        ? [0, 1, 3]
+                        : [0, 1, 2, 3];
+
+        return base.map(
+            direction =>
+                (
+                    direction +
+                    tile.rotation
+                ) % 4
+        );
+    },
+
+
+    draw() {
+
+        const g = this;
+
+        clearCanvas();
+
+        ctx.fillStyle = "#07101f";
+
+        ctx.fillRect(
+            0,
+            0,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT
+        );
+
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.font =
+            "bold 20px sans-serif";
+
+        ctx.fillText(
+            `🧩 Connect the Network   •   Moves: ${g.moves}`,
+            450,
+            42
+        );
+
+        for (
+            let r = 0;
+            r < g.size;
+            r++
+        ) {
+
+            for (
+                let c = 0;
+                c < g.size;
+                c++
+            ) {
+
+                const x =
+                    g.offsetX +
+                    c * g.tileSize;
+
+                const y =
+                    g.offsetY +
+                    r * g.tileSize;
+
+                const tile =
+                    g.board[r][c];
+
+                ctx.fillStyle =
+                    (
+                        r === g.selectedRow &&
+                        c === g.selectedCol
+                    )
+                        ? "#25395f"
+                        : "#101c31";
+
+                roundedRect(
+                    x + 4,
+                    y + 4,
+                    g.tileSize - 8,
+                    g.tileSize - 8,
+                    12
+                );
+
+                ctx.fill();
+
+                this.drawPipe(
+                    tile,
+                    x +
+                        g.tileSize / 2,
+                    y +
+                        g.tileSize / 2
+                );
+            }
+        }
+
+        ctx.fillStyle = "#9aa7c1";
+
+        ctx.font =
+            "14px sans-serif";
+
+        ctx.fillText(
+            "Tap a tile to rotate • Arrow keys to select",
+            450,
+            560
+        );
+    },
+
+
+    drawPipe(tile, cx, cy) {
+
+        const connections =
+            this.getConnections(tile);
+
+        ctx.strokeStyle =
+            "#5ee7ff";
+
+        ctx.lineWidth = 18;
+
+        ctx.lineCap = "round";
+
+        for (
+            const dir of connections
+        ) {
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                cx,
+                cy
+            );
+
+            if (dir === 0) {
+                ctx.lineTo(
+                    cx,
+                    cy - 36
+                );
+            }
+
+            if (dir === 1) {
+                ctx.lineTo(
+                    cx + 36,
+                    cy
+                );
+            }
+
+            if (dir === 2) {
+                ctx.lineTo(
+                    cx,
+                    cy + 36
+                );
+            }
+
+            if (dir === 3) {
+                ctx.lineTo(
+                    cx - 36,
+                    cy
+                );
+            }
+
+            ctx.stroke();
+        }
+
+        ctx.fillStyle =
+            "#9ff5ff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            cx,
+            cy,
+            10,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+};
+
+
+function startPipeConnect() {
+
+    const g = pipeGame;
+
+    g.board = [];
+
+    g.selectedRow = 0;
+
+    g.selectedCol = 0;
+
+    g.moves = 0;
+
+    g.solved = false;
+
+    const types = [
+        "straight",
+        "corner",
+        "tee",
+        "cross"
+    ];
+
+    for (
+        let r = 0;
+        r < g.size;
+        r++
+    ) {
+
+        const row = [];
+
+        for (
+            let c = 0;
+            c < g.size;
+            c++
+        ) {
+
+            row.push({
+
+                type:
+                    types[
+                        randomInt(
+                            0,
+                            types.length - 1
+                        )
+                    ],
+
+                rotation:
+                    randomInt(0, 3)
+            });
+        }
+
+        g.board.push(row);
+    }
+
+    return null;
+}
+
+
+/* =========================================================
+   10. TRAFFIC ESCAPE
+   ========================================================= */
+
+const trafficGame = {
+
+    grid: 6,
+
+    cell: 70,
+
+    offsetX: 240,
+    offsetY: 70,
+
+    cars: [],
+
+    selected: 0,
+
+    won: false,
+
+    update(dt) {
+
+        const g = this;
+
+        const speed = 180;
+
+        const car =
+            g.cars[g.selected];
+
+        if (!car) {
+            return;
+        }
+
+        let dx = 0;
+        let dy = 0;
+
+        if (keyState.ArrowLeft) {
+            dx = -speed * dt;
+        }
+
+        if (keyState.ArrowRight) {
+            dx = speed * dt;
+        }
+
+        if (keyState.ArrowUp) {
+            dy = -speed * dt;
+        }
+
+        if (keyState.ArrowDown) {
+            dy = speed * dt;
+        }
+
+        if (
+            Math.abs(dx) +
+            Math.abs(dy) > 0
+        ) {
+
+            const oldX = car.x;
+            const oldY = car.y;
+
+            car.x += dx;
+            car.y += dy;
+
+            if (
+                this.collides(car) ||
+                !this.inside(car)
+            ) {
+
+                car.x = oldX;
+                car.y = oldY;
+            }
+        }
+
+        if (
+            car.red &&
+            car.x +
+                car.width >
+                g.grid * g.cell
+        ) {
+
+            g.won = true;
+
+            addScore(200);
+
+            showToast(
+                "🚦 You Escaped!"
+            );
+
+            setTimeout(() => {
+
+                if (gameRunning) {
+                    gameOver();
+                }
+
+            }, 700);
+        }
+    },
+
+
+    inside(car) {
+
+        return (
+            car.x >= 0 &&
+            car.y >= 0 &&
+            car.x + car.width <=
+                this.grid * this.cell &&
+            car.y + car.height <=
+                this.grid * this.cell
+        );
+    },
+
+
+    collides(car) {
+
+        for (
+            let i = 0;
+            i < this.cars.length;
+            i++
+        ) {
+
+            if (
+                i ===
+                this.selected
+            ) {
+                continue;
+            }
+
+            if (
+                rectCollision(
+                    car,
+                    this.cars[i]
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
+
+    selectAt(x, y) {
+
+        const localX =
+            x -
+            this.offsetX;
+
+        const localY =
+            y -
+            this.offsetY;
+
+        for (
+            let i = 0;
+            i < this.cars.length;
+            i++
+        ) {
+
+            const car =
+                this.cars[i];
+
+            if (
+                localX >= car.x &&
+                localX <=
+                    car.x +
+                    car.width &&
+                localY >= car.y &&
+                localY <=
+                    car.y +
+                    car.height
+            ) {
+
+                this.selected = i;
+
+                return;
+            }
+        }
+    },
+
+
+    draw() {
+
+        const g = this;
+
+        clearCanvas();
+
+        ctx.fillStyle = "#07101b";
+
+        ctx.fillRect(
+            0,
+            0,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT
+        );
+
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.font =
+            "bold 22px sans-serif";
+
+        ctx.fillText(
+            "🚦 Traffic Escape",
+            450,
+            38
+        );
+
+        ctx.font =
+            "14px sans-serif";
+
+        ctx.fillStyle = "#9ba8c0";
+
+        ctx.fillText(
+            "Move the red car to the exit →",
+            450,
+            60
+        );
+
+        ctx.fillStyle = "#252e3e";
+
+        roundedRect(
+            g.offsetX - 10,
+            g.offsetY - 10,
+            g.grid * g.cell + 20,
+            g.grid * g.cell + 20,
+            18
+        );
+
+        ctx.fill();
+
+        for (
+            let i = 0;
+            i <= g.grid;
+            i++
+        ) {
+
+            ctx.strokeStyle =
+                "rgba(255,255,255,0.08)";
+
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                g.offsetX +
+                    i * g.cell,
+                g.offsetY
+            );
+
+            ctx.lineTo(
+                g.offsetX +
+                    i * g.cell,
+                g.offsetY +
+                    g.grid * g.cell
+            );
+
+            ctx.stroke();
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                g.offsetX,
+                g.offsetY +
+                    i * g.cell
+            );
+
+            ctx.lineTo(
+                g.offsetX +
+                    g.grid * g.cell,
+                g.offsetY +
+                    i * g.cell
+            );
+
+            ctx.stroke();
+        }
+
+        for (
+            let i = 0;
+            i < g.cars.length;
+            i++
+        ) {
+
+            const car =
+                g.cars[i];
+
+            ctx.fillStyle =
+                car.red
+                    ? "#ff5368"
+                    : car.color;
+
+            roundedRect(
+                g.offsetX +
+                    car.x + 5,
+                g.offsetY +
+                    car.y + 5,
+                car.width - 10,
+                car.height - 10,
+                12
+            );
+
+            ctx.fill();
+
+            if (
+                i === g.selected
+            ) {
+
+                ctx.strokeStyle =
+                    "#ffffff";
+
+                ctx.lineWidth = 4;
+
+                ctx.stroke();
+            }
+
+            ctx.fillStyle =
+                "rgba(255,255,255,0.35)";
+
+            if (car.horizontal) {
+
+                ctx.fillRect(
+                    g.offsetX +
+                        car.x +
+                        15,
+                    g.offsetY +
+                        car.y +
+                        car.height / 2 -
+                        4,
+                    car.width - 30,
+                    8
+                );
+
+            } else {
+
+                ctx.fillRect(
+                    g.offsetX +
+                        car.x +
+                        car.width / 2 -
+                        4,
+                    g.offsetY +
+                        car.y +
+                        15,
+                    8,
+                    car.height - 30
+                );
+            }
+        }
+
+        ctx.fillStyle = "#4ee28a";
+
+        ctx.fillRect(
+            g.offsetX +
+                g.grid * g.cell,
+            g.offsetY + 2 * g.cell,
+            20,
+            2 * g.cell
+        );
+    }
+};
+
+
+function startTrafficEscape() {
+
+    const g = trafficGame;
+
+    g.cars = [];
+
+    g.selected = 0;
+
+    g.won = false;
+
+    const C = g.cell;
+
+    g.cars.push({
+
+        x: 0,
+
+        y: 2 * C,
+
+        width: 2 * C,
+
+        height: C,
+
+        horizontal: true,
+
+        red: true,
+
+        color: "#ff5368"
+    });
+
+    g.cars.push({
+
+        x: 2 * C,
+
+        y: 0,
+
+        width: C,
+
+        height: 2 * C,
+
+        horizontal: false,
+
+        color: "#4d9cff"
+    });
+
+    g.cars.push({
+
+        x: 4 * C,
+
+        y: 0,
+
+        width: C,
+
+        height: 2 * C,
+
+        horizontal: false,
+
+        color: "#f0a34e"
+    });
+
+    g.cars.push({
+
+        x: 1 * C,
+
+        y: 4 * C,
+
+        width: 2 * C,
+
+        height: C,
+
+        horizontal: true,
+
+        color: "#9b6cff"
+    });
+
+    g.cars.push({
+
+        x: 4 * C,
+
+        y: 3 * C,
+
+        width: C,
+
+        height: 2 * C,
+
+        horizontal: false,
+
+        color: "#45d6a8"
+    });
+
+    return null;
+}
+
+
+/* =========================================================
+   11. LIGHTS OUT
+   ========================================================= */
+
+const lightsGame = {
+
+    size: 5,
+
+    tile: 78,
+
+    offsetX: 255,
+
+    offsetY: 80,
+
+    board: [],
+
+    moves: 0,
+
+    update() {
+        // Input based.
+    },
+
+
+    tap(x, y) {
+
+        if (!gameRunning) {
+            return;
+        }
+
+        const col =
+            Math.floor(
+                (
+                    x -
+                    this.offsetX
+                ) /
+                this.tile
+            );
+
+        const row =
+            Math.floor(
+                (
+                    y -
+                    this.offsetY
+                ) /
+                this.tile
+            );
+
+        if (
+            row < 0 ||
+            row >= this.size ||
+            col < 0 ||
+            col >= this.size
+        ) {
+            return;
+        }
+
+        this.toggle(row, col);
+
+        this.moves++;
+
+        if (this.isSolved()) {
+
+            addScore(
+                Math.max(
+                    50,
+                    300 -
+                    this.moves * 4
+                )
+            );
+
+            showToast(
+                "💡 All Lights Off!"
+            );
+
+            setTimeout(() => {
+
+                if (gameRunning) {
+                    gameOver();
+                }
+
+            }, 700);
+        }
+    },
+
+
+    toggle(row, col) {
+
+        const positions = [
+            [row, col],
+            [row - 1, col],
+            [row + 1, col],
+            [row, col - 1],
+            [row, col + 1]
+        ];
+
+        for (
+            const [
+                r,
+                c
+            ]
+            of positions
+        ) {
+
+            if (
+                r >= 0 &&
+                r < this.size &&
+                c >= 0 &&
+                c < this.size
+            ) {
+
+                this.board[r][c] =
+                    !this.board[r][c];
+            }
+        }
+    },
+
+
+    isSolved() {
+
+        for (
+            let r = 0;
+            r < this.size;
+            r++
+        ) {
+
+            for (
+                let c = 0;
+                c < this.size;
+                c++
+            ) {
+
+                if (
+                    this.board[r][c]
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    },
+
+
+    draw() {
+
+        const g = this;
+
+        clearCanvas();
+
+        ctx.fillStyle = "#080f1d";
+
+        ctx.fillRect(
+            0,
+            0,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT
+        );
+
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.font =
+            "bold 22px sans-serif";
+
+        ctx.fillText(
+            `💡 Lights Out   •   Moves: ${g.moves}`,
+            450,
+            40
+        );
+
+        for (
+            let r = 0;
+            r < g.size;
+            r++
+        ) {
+
+            for (
+                let c = 0;
+                c < g.size;
+                c++
+            ) {
+
+                const x =
+                    g.offsetX +
+                    c * g.tile;
+
+                const y =
+                    g.offsetY +
+                    r * g.tile;
+
+                const on =
+                    g.board[r][c];
+
+                ctx.fillStyle =
+                    on
+                        ? "#ffd84d"
+                        : "#172238";
+
+                roundedRect(
+                    x + 5,
+                    y + 5,
+                    g.tile - 10,
+                    g.tile - 10,
+                    14
+                );
+
+                ctx.fill();
+
+                if (on) {
+
+                    ctx.fillStyle =
+                        "rgba(255,240,130,0.35)";
+
+                    ctx.beginPath();
+
+                    ctx.arc(
+                        x +
+                            g.tile / 2,
+                        y +
+                            g.tile / 2,
+                        18,
+                        0,
+                        Math.PI * 2
+                    );
+
+                    ctx.fill();
+                }
+            }
+        }
+
+        ctx.fillStyle = "#9aa7bd";
+
+        ctx.font =
+            "14px sans-serif";
+
+        ctx.fillText(
+            "Turn every light off",
+            450,
+            550
+        );
+    }
+};
+
+
+function startLightsOut() {
+
+    const g = lightsGame;
+
+    g.board =
+        Array.from(
+            {
+                length:
+                    g.size
+            },
+            () =>
+                Array(
+                    g.size
+                ).fill(false)
+        );
+
+    g.moves = 0;
+
+    /*
+       Generate a solvable puzzle by applying
+       random valid moves to an empty board.
+    */
+
+    for (let i = 0; i < 18; i++) {
+
+        const r =
+            randomInt(
+                0,
+                g.size - 1
+            );
+
+        const c =
+            randomInt(
+                0,
+                g.size - 1
+            );
+
+        g.toggle(r, c);
+    }
+
+    return null;
+}
+
+
+/* =========================================================
+   12. STACK TOWER
+   ========================================================= */
+
+const stackGame = {
+
+    blocks: [],
+
+    current: null,
+
+    direction: 1,
+
+    speed: 260,
+
+    width: 260,
+
+    height: 32,
+
+    baseY: 550,
+
+    update(dt) {
+
+        const g = this;
+
+        if (!g.current) {
+            return;
+        }
+
+        g.current.x +=
+            g.direction *
+            g.speed *
+            dt;
+
+        if (
+            g.current.x <= 90
+        ) {
+
+            g.current.x = 90;
+
+            g.direction = 1;
+        }
+
+        if (
+            g.current.x +
+                g.current.width >=
+                810
+        ) {
+
+            g.current.x =
+                810 -
+                g.current.width;
+
+            g.direction = -1;
+        }
+    },
+
+
+    drop() {
+
+        if (
+            !gameRunning ||
+            !this.current
+        ) {
+            return;
+        }
+
+        const current =
+            this.current;
+
+        const previous =
+            this.blocks[
+                this.blocks.length - 1
+            ];
+
+        if (previous) {
+
+            const left =
+                Math.max(
+                    current.x,
+                    previous.x
+                );
+
+            const right =
+                Math.min(
+                    current.x +
+                        current.width,
+                    previous.x +
+                        previous.width
+                );
+
+            const overlap =
+                right - left;
+
+            if (overlap <= 0) {
+
+                gameOver();
+
+                return;
+            }
+
+            current.x = left;
+
+            current.width = overlap;
+        }
+
+        current.y =
+            this.baseY -
+            this.blocks.length *
+                this.height;
+
+        this.blocks.push(current);
+
+        addScore(
+            5 +
+            this.blocks.length
+        );
+
+        if (
+            this.blocks.length >= 18
+        ) {
+
+            addScore(100);
+
+            showToast(
+                "🏗️ Tower Master!"
+            );
+
+            setTimeout(() => {
+
+                if (gameRunning) {
+                    gameOver();
+                }
+
+            }, 700);
+
+            return;
+        }
+
+        this.current = {
+
+            x:
+                random(
+                    90,
+                    810 -
+                        current.width
+                ),
+
+            y:
+                this.baseY -
+                (
+                    this.blocks.length
+                ) *
+                this.height,
+
+            width:
+                current.width,
+
+            height:
+                this.height
+        };
+
+        this.direction =
+            Math.random() > 0.5
+                ? 1
+                : -1;
+
+        this.speed =
+            Math.min(
+                500,
+                260 +
+                    this.blocks.length *
+                    14
+            );
+    },
+
+
+    draw() {
+
+        const g = this;
+
+        clearCanvas();
+
+        ctx.fillStyle = "#07101d";
+
+        ctx.fillRect(
+            0,
+            0,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT
+        );
+
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.font =
+            "bold 24px sans-serif";
+
+        ctx.fillText(
+            `🏗️ Stack Tower   •   ${g.blocks.length} Floors`,
+            450,
+            40
+        );
+
+        ctx.fillStyle = "#18243a";
+
+        ctx.fillRect(
+            70,
+            550,
+            760,
+            20
+        );
+
+        for (
+            let i = 0;
+            i < g.blocks.length;
+            i++
+        ) {
+
+            const block =
+                g.blocks[i];
+
+            ctx.fillStyle =
+                i % 2 === 0
+                    ? "#6c63ff"
+                    : "#45d6a8";
+
+            roundedRect(
+                block.x,
+                block.y,
+                block.width,
+                block.height - 3,
+                7
+            );
+
+            ctx.fill();
+        }
+
+        if (g.current) {
+
+            ctx.fillStyle =
+                "#ffd34e";
+
+            roundedRect(
+                g.current.x,
+                g.current.y,
+                g.current.width,
+                g.current.height - 3,
+                7
+            );
+
+            ctx.fill();
+        }
+
+        ctx.fillStyle = "#8e9ab3";
+
+        ctx.font =
+            "14px sans-serif";
+
+        ctx.fillText(
+            "Tap DROP or press SPACE",
+            450,
+            585
+        );
+    }
+};
+
+
+function startStackTower() {
+
+    stackGame.blocks = [];
+
+    stackGame.direction = 1;
+
+    stackGame.speed = 260;
+
+    stackGame.current = {
+
+        x: 320,
+
+        y: 518,
+
+        width:
+            stackGame.width,
+
+        height:
+            stackGame.height
+    };
+
+    return null;
+}
+
+
+/* =========================================================
+   13. GRAVITY MAZE
+   ========================================================= */
+
+const gravityGame = {
+
+    player: null,
+
+    walls: [],
+
+    exit: null,
+
+    gravity: {
+        x: 0,
+        y: 1
+    },
+
+    moveTimer: 0,
+
+    update(dt) {
+
+        const g = this;
+
+        if (!g.player) {
+            return;
+        }
+
+        g.moveTimer += dt;
+
+        if (
+            g.moveTimer < 0.016
+        ) {
+            return;
+        }
+
+        g.moveTimer = 0;
+
+        const speed = 150;
+
+        const oldX =
+            g.player.x;
+
+        const oldY =
+            g.player.y;
+
+        g.player.x +=
+            g.gravity.x *
+            speed *
+            dt;
+
+        g.player.y +=
+            g.gravity.y *
+            speed *
+            dt;
+
+        if (
+            g.player.x <
+                20 ||
+            g.player.x >
+                CANVAS_WIDTH - 20
+        ) {
+
+            g.player.x =
+                clamp(
+                    g.player.x,
+                    20,
+                    CANVAS_WIDTH - 20
+                );
+        }
+
+        if (
+            g.player.y <
+                20 ||
+            g.player.y >
+                CANVAS_HEIGHT - 20
+        ) {
+
+            g.player.y =
+                clamp(
+                    g.player.y,
+                    20,
+                    CANVAS_HEIGHT - 20
+                );
+        }
+
+        const playerBox = {
+
+            x:
+                g.player.x - 14,
+
+            y:
+                g.player.y - 14,
+
+            width: 28,
+
+            height: 28
+        };
+
+        for (
+            const wall of g.walls
+        ) {
+
+            if (
+                rectCollision(
+                    playerBox,
+                    wall
+                )
+            ) {
+
+                g.player.x = oldX;
+
+                g.player.y = oldY;
+
+                break;
+            }
+        }
+
+        if (
+            distance(
+                g.player.x,
+                g.player.y,
+                g.exit.x,
+                g.exit.y
+            ) < 28
+        ) {
+
+            addScore(
+                100 +
+                Math.max(
+                    0,
+                    150 -
+                    Math.floor(
+                        gameTime * 5
+                    )
+                )
+            );
+
+            showToast(
+                "🌀 Maze Complete!"
+            );
+
+            setTimeout(() => {
+
+                if (gameRunning) {
+                    gameOver();
+                }
+
+            }, 700);
+        }
+    },
+
+
+    setGravity(x, y) {
+
+        if (!gameRunning) {
+            return;
+        }
+
+        this.gravity.x = x;
+        this.gravity.y = y;
+
+        addScore(1);
+    },
+
+
+    draw() {
+
+        const g = this;
+
+        clearCanvas();
+
+        ctx.fillStyle = "#060d19";
+
+        ctx.fillRect(
+            0,
+            0,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT
+        );
+
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.font =
+            "bold 22px sans-serif";
+
+        ctx.fillText(
+            "🌀 Gravity Maze",
+            450,
+            35
+        );
+
+        ctx.font =
+            "14px sans-serif";
+
+        ctx.fillStyle = "#9aa8c1";
+
+        ctx.fillText(
+            "Change gravity and reach the green portal",
+            450,
+            58
+        );
+
+        ctx.fillStyle = "#26344d";
+
+        for (
+            const wall of g.walls
+        ) {
+
+            roundedRect(
+                wall.x,
+                wall.y,
+                wall.width,
+                wall.height,
+                8
+            );
+
+            ctx.fill();
+        }
+
+        ctx.fillStyle = "#45d6a8";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            g.exit.x,
+            g.exit.y,
+            25,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.strokeStyle =
+            "rgba(255,255,255,0.5)";
+
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            g.exit.x,
+            g.exit.y,
+            14,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.stroke();
+
+        ctx.fillStyle = "#6c63ff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            g.player.x,
+            g.player.y,
+            16,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            g.player.x - 5,
+            g.player.y - 3,
+            3,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.beginPath();
+
+        ctx.arc(
+            g.player.x + 5,
+            g.player.y - 3,
+            3,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+};
+
+
+function startGravityMaze() {
+
+    const g = gravityGame;
+
+    g.player = {
+
+        x: 80,
+
+        y: 80
+    };
+
+    g.exit = {
+
+        x: 810,
+
+        y: 520
+    };
+
+    g.gravity = {
+
+        x: 0,
+
+        y: 1
+    };
+
+    g.moveTimer = 0;
+
+    g.walls = [
+
+        {
+            x: 150,
+            y: 80,
+            width: 30,
+            height: 330
+        },
+
+        {
+            x: 150,
+            y: 440,
+            width: 350,
+            height: 30
+        },
+
+        {
+            x: 300,
+            y: 100,
+            width: 30,
+            height: 260
+        },
+
+        {
+            x: 430,
+            y: 100,
+            width: 30,
+            height: 330
+        },
+
+        {
+            x: 570,
+            y: 170,
+            width: 30,
+            height: 350
+        },
+
+        {
+            x: 700,
+            y: 70,
+            width: 30,
+            height: 300
+        },
+
+        {
+            x: 300,
+            y: 70,
+            width: 160,
+            height: 30
+        },
+
+        {
+            x: 460,
+            y: 500,
+            width: 170,
+            height: 30
+        }
+    ];
+
+    return null;
+}
+
+
+/* =========================================================
+   14. TREASURE HUNT
+   ========================================================= */
+
+const treasureGame = {
+
+    cols: 10,
+
+    rows: 7,
+
+    tile: 70,
+
+    offsetX: 100,
+
+    offsetY: 65,
+
+    player: null,
+
+    treasure: null,
+
+    traps: [],
+
+    visited: [],
+
+    moves: 0,
+
+    update(dt) {
+
+        const g = this;
+
+        if (!g.player) {
+            return;
+        }
+
+        let dx = 0;
+        let dy = 0;
+
+        if (keyState.ArrowLeft) {
+            dx = -1;
+        }
+
+        if (keyState.ArrowRight) {
+            dx = 1;
+        }
+
+        if (keyState.ArrowUp) {
+            dy = -1;
+        }
+
+        if (keyState.ArrowDown) {
+            dy = 1;
+        }
+
+        if (
+            dx === 0 &&
+            dy === 0
+        ) {
+            return;
+        }
+
+        if (
+            g.moveCooldown > 0
+        ) {
+            return;
+        }
+
+        g.moveCooldown = 0.12;
+
+        const nx =
+            g.player.col + dx;
+
+        const ny =
+            g.player.row + dy;
+
+        if (
+            nx < 0 ||
+            nx >= g.cols ||
+            ny < 0 ||
+            ny >= g.rows
+        ) {
+            return;
+        }
+
+        g.player.col = nx;
+
+        g.player.row = ny;
+
+        g.moves++;
+
+        g.visited[ny][nx] = true;
+
+        addScore(1);
+
+        const trap =
+            g.traps.find(
+                t =>
+                    t.col === nx &&
+                    t.row === ny
+            );
+
+        if (trap) {
+
+            showToast(
+                "💥 Trap!"
+            );
+
+            g.traps =
+                g.traps.filter(
+                    t => t !== trap
+                );
+
+            addScore(-10);
+        }
+
+        if (
+            g.treasure.col === nx &&
+            g.treasure.row === ny
+        ) {
+
+            addScore(
+                150 +
+                Math.max(
+                    0,
+                    100 -
+                    g.moves
+                )
+            );
+
+            showToast(
+                "💰 Treasure Found!"
+            );
+
+            setTimeout(() => {
+
+                if (gameRunning) {
+                    gameOver();
+                }
+
+            }, 700);
+        }
+    },
+
+
+    draw() {
+
+        const g = this;
+
+        clearCanvas();
+
+        ctx.fillStyle = "#07101c";
+
+        ctx.fillRect(
+            0,
+            0,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT
+        );
+
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.font =
+            "bold 22px sans-serif";
+
+        ctx.fillText(
+            `🗺️ Treasure Hunt   •   Moves: ${g.moves}`,
+            450,
+            35
+        );
+
+        for (
+            let r = 0;
+            r < g.rows;
+            r++
+        ) {
+
+            for (
+                let c = 0;
+                c < g.cols;
+                c++
+            ) {
+
+                const x =
+                    g.offsetX +
+                    c * g.tile;
+
+                const y =
+                    g.offsetY +
+                    r * g.tile;
+
+                ctx.fillStyle =
+                    g.visited[r][c]
+                        ? "#18283b"
+                        : "#101c2d";
+
+                ctx.fillRect(
+                    x + 2,
+                    y + 2,
+                    g.tile - 4,
+                    g.tile - 4
+                );
+
+                ctx.strokeStyle =
+                    "rgba(255,255,255,0.05)";
+
+                ctx.strokeRect(
+                    x,
+                    y,
+                    g.tile,
+                    g.tile
+                );
+            }
+        }
+
+        for (
+            const trap of g.traps
+        ) {
+
+            const x =
+                g.offsetX +
+                trap.col * g.tile +
+                g.tile / 2;
+
+            const y =
+                g.offsetY +
+                trap.row * g.tile +
+                g.tile / 2;
+
+            if (
+                g.visited[
+                    trap.row
+                ][trap.col]
+            ) {
+
+                ctx.fillStyle =
+                    "#ff5d73";
+
+                ctx.font =
+                    "28px sans-serif";
+
+                ctx.fillText(
+                    "⚠️",
+                    x,
+                    y + 10
+                );
+            }
+        }
+
+        const tx =
+            g.offsetX +
+            g.treasure.col *
+                g.tile +
+            g.tile / 2;
+
+        const ty =
+            g.offsetY +
+            g.treasure.row *
+                g.tile +
+            g.tile / 2;
+
+        if (
+            g.visited[
+                g.treasure.row
+            ][g.treasure.col]
+        ) {
+
+            ctx.font =
+                "32px sans-serif";
+
+            ctx.fillText(
+                "💰",
+                tx,
+                ty + 10
+            );
+        }
+
+        const px =
+            g.offsetX +
+            g.player.col *
+                g.tile +
+            g.tile / 2;
+
+        const py =
+            g.offsetY +
+            g.player.row *
+                g.tile +
+            g.tile / 2;
+
+        ctx.font =
+            "34px sans-serif";
+
+        ctx.fillText(
+            "🧭",
+            px,
+            py + 11
+        );
+
+        ctx.fillStyle = "#8f9db5";
+
+        ctx.font =
+            "14px sans-serif";
+
+        ctx.fillText(
+            "Explore the map and discover the hidden treasure",
+            450,
+            575
+        );
+    }
+};
+
+
+function startTreasureHunt() {
+
+    const g = treasureGame;
+
+    g.player = {
+
+        col: 0,
+
+        row: 0
+    };
+
+    g.treasure = {
+
+        col:
+            randomInt(
+                7,
+                9
+            ),
+
+        row:
+            randomInt(
+                4,
+                6
+            )
+    };
+
+    g.traps = [];
+
+    g.visited =
+        Array.from(
+            {
+                length:
+                    g.rows
+            },
+            () =>
+                Array(
+                    g.cols
+                ).fill(false)
+        );
+
+    g.visited[0][0] = true;
+
+    g.moves = 0;
+
+    g.moveCooldown = 0;
+
+    for (
+        let i = 0;
+        i < 10;
+        i++
+    ) {
+
+        let col;
+        let row;
+
+        do {
+
+            col =
+                randomInt(
+                    0,
+                    g.cols - 1
+                );
+
+            row =
+                randomInt(
+                    0,
+                    g.rows - 1
+                );
+
+        } while (
+            (
+                col ===
+                    g.player.col &&
+                row ===
+                    g.player.row
+            ) ||
+            (
+                col ===
+                    g.treasure.col &&
+                row ===
+                    g.treasure.row
+            ) ||
+            g.traps.some(
+                t =>
+                    t.col === col &&
+                    t.row === row
+            )
+        );
+
+        g.traps.push({
+            col,
+            row
+        });
+    }
+
+    return null;
+}
+
+
+/* =========================================================
+   TREASURE MOVE COOLDOWN
+   ========================================================= */
+
+const originalTreasureUpdate =
+    treasureGame.update;
+
+treasureGame.update = function(dt) {
+
+    if (
+        this.moveCooldown > 0
+    ) {
+        this.moveCooldown -= dt;
+    }
+
+    originalTreasureUpdate.call(
+        this,
+        dt
+    );
+};
+
+
+/* =========================================================
+   TRAFFIC POINTER SUPPORT
+   ========================================================= */
+
+gameCanvas.addEventListener(
+    "pointerdown",
+    event => {
+
+        if (
+            currentGame ===
+            "traffic"
+        ) {
+
+            trafficGame.selectAt(
+                pointerState.x,
+                pointerState.y
+            );
+        }
+    }
+);
 
 
 /* =========================================================
@@ -3472,6 +6713,7 @@ document.querySelectorAll(
     card.addEventListener(
         "click",
         () => {
+
             openGame(
                 card.dataset.game
             );
@@ -3513,8 +6755,11 @@ closeAppBtn.addEventListener(
         if (tg) {
 
             try {
+
                 tg.close();
+
             } catch {
+
                 window.history.back();
             }
 
@@ -3540,6 +6785,7 @@ window.addEventListener(
                 "hidden"
             )
         ) {
+
             updatePointerPositionFromCenter();
         }
     }
@@ -3571,7 +6817,10 @@ function updatePointerPositionFromCenter() {
    TELEGRAM BACK BUTTON
    ========================================================= */
 
-if (tg && tg.BackButton) {
+if (
+    tg &&
+    tg.BackButton
+) {
 
     tg.BackButton.onClick(
         () => {
@@ -3582,8 +6831,11 @@ if (tg && tg.BackButton) {
                     "hidden"
                 )
             ) {
+
                 returnToMenu();
+
             } else {
+
                 tg.close();
             }
         }
@@ -3596,6 +6848,8 @@ if (tg && tg.BackButton) {
    ========================================================= */
 
 loadTelegramUser();
+
+addNewGameCards();
 
 setScore(0);
 

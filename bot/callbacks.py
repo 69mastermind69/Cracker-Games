@@ -25,7 +25,7 @@ async def show_games_menu(query):
 
 
 # ============================================================
-# DEVELOPER MENU
+# DEVELOPER
 # ============================================================
 
 async def show_developer(query):
@@ -34,13 +34,13 @@ async def show_developer(query):
             InlineKeyboardButton(
                 "📱 Telegram",
                 url="https://t.me/Do_x_Die",
-            ),
+            )
         ],
         [
             InlineKeyboardButton(
                 "🔙 Back to Games",
                 callback_data="menu:games",
-            ),
+            )
         ],
     ]
 
@@ -71,11 +71,8 @@ async def button_callback(
 
     data = query.data or ""
 
-    # --------------------------------------------------------
-    # Answer callback
-    # --------------------------------------------------------
-
     await query.answer()
+
 
     # ========================================================
     # ALL GAMES MENU
@@ -162,15 +159,15 @@ async def button_callback(
         return
 
     if data == "quiz:next":
-        from bot.games.quiz import start_quiz
+        from bot.games.quiz import continue_quiz
 
-        await start_quiz(query)
+        await continue_quiz(query)
         return
 
     if data.startswith("quiz:answer:"):
-        from bot.games.quiz import handle_quiz_answer
+        from bot.games.quiz import handle_quiz
 
-        await handle_quiz_answer(query, data)
+        await handle_quiz(query, data)
         return
 
 

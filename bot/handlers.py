@@ -1,12 +1,22 @@
-
 # bot/handlers.py
+
+import os
 
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    WebAppInfo,
 )
 from telegram.ext import ContextTypes
+
+
+# ============================================================
+# WEB APP CONFIG
+# ============================================================
+
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").rstrip("/")
+WEBAPP_URL = f"{WEBHOOK_URL}/games"
 
 
 # ============================================================
@@ -178,10 +188,46 @@ async def games_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
+    """
+    /games command
+
+    Telegram Menu:
+        🎮 Games
+            ↓
+        Open Games
+            ↓
+        Web App
+    """
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "🎮 Open Games",
+                web_app=WebAppInfo(url=WEBAPP_URL),
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "📋 Classic Games",
+                callback_data="menu:games",
+            )
+        ],
+    ]
+
     await update.message.reply_text(
-        "🎮 *Choose a Game*",
+        "🎮 *Cracker Games*\n\n"
+        "Real-time graphical games খেলতে নিচের button চাপো।\n\n"
+        "🏎️ Car Racing\n"
+        "🥊 Fighting Arena\n"
+        "🚀 Space Shooter\n"
+        "🏃 Endless Runner\n"
+        "⚽ Penalty Shootout\n"
+        "🏀 Basketball\n"
+        "🏹 Archery\n"
+        "🎯 Target Shooter\n\n"
+        "👇 *Choose an option:*",
         parse_mode="Markdown",
-        reply_markup=games_menu(),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -213,4 +259,3 @@ async def about_command(
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
-

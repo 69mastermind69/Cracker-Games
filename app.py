@@ -3,11 +3,9 @@
 import os
 import asyncio
 import logging
-from http import HTTPStatus
 
-from asgiref.wsgi import WsgiToAsgi
 from flask import Flask, request, Response, send_from_directory
-
+from asgiref.wsgi import WsgiToAsgi
 import uvicorn
 
 from telegram import (
@@ -15,7 +13,7 @@ from telegram import (
     BotCommand,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    MenuButtonCommands,
+    MenuButtonWebApp,
     WebAppInfo,
 )
 
@@ -26,14 +24,27 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from bot.handlers import (
-    start_command,
-    games_command,
-)
+from bot.handlers import start_command, games_command
+from bot.callbacks import button_callback
 
-from bot.callbacks import (
-    button_callback,
-)
+
+# ============================================================
+# CONFIG
+# ============================================================
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+WEBHOOK_URL = os.getenv(
+    "WEBHOOK_URL",
+    "https://cracker-games.onrender.com"
+).rstrip("/")
+
+PORT = int(os.getenv("PORT", "10000"))
+
+LANDING_URL = WEBHOOK_URL
+GAMES_URL = f"{WEBHOOK_URL}/games"
+HEALTH_URL = f"{WEBHOOK_URL}/health"
+TELEGRAM_WEBHOOK_URL = f"{WEBHOOK_URL}/telegram"
 
 
 # ============================================================
@@ -49,63 +60,24 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# ENVIRONMENT
-# ============================================================
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-
-WEBHOOK_URL = os.getenv(
-    "WEBHOOK_URL",
-    "https://cracker-games.onrender.com",
-).rstrip("/")
-
-PORT = int(
-    os.getenv(
-        "PORT",
-        "10000",
-    )
-)
-
-
-# ============================================================
 # VALIDATION
 # ============================================================
 
 if not BOT_TOKEN:
-    raise RuntimeError(
-        "BOT_TOKEN environment variable is missing."
-    )
+    raise RuntimeError("BOT_TOKEN environment variable is missing.")
 
 if not WEBHOOK_URL:
-    raise RuntimeError(
-        "WEBHOOK_URL environment variable is missing."
-    )
+    raise RuntimeError("WEBHOOK_URL environment variable is missing.")
 
 
 # ============================================================
-# URL CONFIG
-# ============================================================
-
-LANDING_URL = WEBHOOK_URL
-GAMES_URL = f"{WEBHOOK_URL}/games"
-HEALTH_URL = f"{WEBHOOK_URL}/health"
-TELEGRAM_WEBHOOK_URL = f"{WEBHOOK_URL}/telegram"
-
-
-# ============================================================
-# FLASK
+# FLASK APP
 # ============================================================
 
 app = Flask(__name__)
 
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
-
-WEBAPP_DIR = os.path.join(
-    BASE_DIR,
-    "webapp",
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")
 
 
 # ============================================================
@@ -129,9 +101,11 @@ async def on_bot_command(
     context: ContextTypes.DEFAULT_TYPE,
 ):
     """
-    /onbot
+    Fallback /onbot command.
 
-    Shows an animated Render landing-page button.
+    The Telegram Menu button itself opens LANDING_URL directly.
+    If user types /onbot manually, this command also provides
+    a direct button to the Render landing page.
     """
 
     if not update.effective_message:
@@ -144,17 +118,20 @@ async def on_bot_command(
                 url=LANDING_URL,
             )
         ],
+        [
+            InlineKeyboardButton(
+                "🎮 Open Games",
+                web_app=WebAppInfo(url=GAMES_URL),
+            )
+        ],
     ]
 
     await update.effective_message.reply_text(
-        "🚀 *MASTERMIND*\n\n"
-        "🎮 *CRACKER GAMES*\n\n"
-        "🟢 Bot control panel is ready.\n"
-        "👇 Open the page below.",
+        "🚀 *CRACKER GAMES*\n\n"
+        "🟢 Bot control panel is ready.\n\n"
+        "👇 Open the Render web app:",
         parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(
-            keyboard
-        ),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -163,1082 +140,417 @@ async def on_bot_command(
 # ============================================================
 
 telegram_app.add_handler(
-    CommandHandler(
-        "start",
-        start_command,
-    )
+    CommandHandler("start", start_command)
 )
 
 telegram_app.add_handler(
-    CommandHandler(
-        "games",
-        games_command,
-    )
+    CommandHandler("games", games_command)
 )
 
 telegram_app.add_handler(
-    CommandHandler(
-        "onbot",
-        on_bot_command,
-    )
+    CommandHandler("onbot", on_bot_command)
 )
 
 telegram_app.add_handler(
-    CallbackQueryHandler(
-        button_callback,
-    )
+    CallbackQueryHandler(button_callback)
 )
 
 
 # ============================================================
-# ANIMATED LANDING PAGE
+# LANDING PAGE
 # ============================================================
 
 @app.route("/")
 def home():
-
-    html = """
+    html = f"""
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>CRACKER GAMES</title>
+
+<style>
+
+* {{
+    box-sizing: border-box;
+}}
+
+html,
+body {{
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+}}
+
+body {{
+    background:
+        radial-gradient(circle at top, #172554 0%, #020617 45%, #000000 100%);
+    color: white;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+    overflow-x: hidden;
+}}
+
+.container {{
+    width: min(1100px, 92%);
+    margin: auto;
+    padding: 60px 0;
+}}
+
+.hero {{
+    text-align: center;
+    padding: 40px 0 30px;
+}}
+
+.crown {{
+    font-size: 58px;
+    animation: float 2.5s ease-in-out infinite;
+}}
+
+@keyframes float {{
+    0%, 100% {{
+        transform: translateY(0);
+    }}
+
+    50% {{
+        transform: translateY(-12px);
+    }}
+}}
+
+.title {{
+    margin: 10px 0 0;
+    font-size: clamp(48px, 10vw, 100px);
+    font-weight: 900;
+    letter-spacing: 5px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #22d3ee,
+            #8b5cf6,
+            #ec4899,
+            #22d3ee
+        );
+
+    background-size: 300% 300%;
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation: gradient 5s ease infinite;
+}}
+
+@keyframes gradient {{
+    0% {{
+        background-position: 0% 50%;
+    }}
+
+    50% {{
+        background-position: 100% 50%;
+    }}
+
+    100% {{
+        background-position: 0% 50%;
+    }}
+}}
+
+.subtitle {{
+    margin-top: 12px;
+    font-size: 20px;
+    letter-spacing: 6px;
+    color: #cbd5e1;
+}}
+
+.status {{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 20px;
+    padding: 9px 18px;
+
+    border-radius: 999px;
+
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.4);
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    color: #4ade80;
+    font-weight: 700;
+}}
 
-    <meta
-        name="theme-color"
-        content="#050816"
-    >
+.dot {{
+    width: 9px;
+    height: 9px;
 
-    <title>
-        MASTERMIND • CRACKER GAMES
-    </title>
+    border-radius: 50%;
+    background: #22c55e;
 
-    <style>
+    box-shadow:
+        0 0 15px #22c55e;
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    animation: pulse 1.5s infinite;
+}}
+
+@keyframes pulse {{
+    0%, 100% {{
+        opacity: 1;
+    }}
 
-        html {
-            scroll-behavior: smooth;
-        }
+    50% {{
+        opacity: 0.4;
+    }}
+}}
 
-        body {
-            min-height: 100vh;
+.buttons {{
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 35px;
+}}
 
-            font-family:
-                Inter,
-                system-ui,
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
+.btn {{
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
 
-            color: #ffffff;
+    min-width: 190px;
+
+    padding: 15px 24px;
+
+    border-radius: 14px;
+
+    text-decoration: none;
+    color: white;
+
+    font-size: 16px;
+    font-weight: 800;
 
-            overflow-x: hidden;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}}
 
-            background:
-                radial-gradient(
-                    circle at 50% -10%,
-                    rgba(59,130,246,0.28),
-                    transparent 38%
-                ),
-                radial-gradient(
-                    circle at 0% 100%,
-                    rgba(124,58,237,0.20),
-                    transparent 35%
-                ),
-                #030712;
-        }
+.btn:hover {{
+    transform: translateY(-4px);
+}}
 
+.games-btn {{
+    background:
+        linear-gradient(
+            135deg,
+            #7c3aed,
+            #2563eb
+        );
 
-        /* ==================================================
-           BACKGROUND
-        ================================================== */
+    box-shadow:
+        0 15px 35px rgba(37, 99, 235, 0.25);
+}}
 
-        .background {
-            position: fixed;
+.status-btn {{
+    background:
+        rgba(255,255,255,0.06);
 
-            inset: 0;
+    border:
+        1px solid rgba(255,255,255,0.12);
+}}
 
-            overflow: hidden;
+.section-title {{
+    text-align: center;
+    margin: 70px 0 25px;
+    font-size: 30px;
+}}
 
-            pointer-events: none;
+.games {{
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
 
-            z-index: 0;
-        }
+    gap: 18px;
+}}
 
-        .orb {
-            position: absolute;
+.card {{
+    padding: 25px;
 
-            border-radius: 50%;
+    border-radius: 22px;
 
-            filter: blur(70px);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,0.08),
+            rgba(255,255,255,0.025)
+        );
 
-            opacity: 0.30;
+    border:
+        1px solid rgba(255,255,255,0.1);
 
-            animation:
-                floatOrb 8s ease-in-out infinite;
-        }
+    backdrop-filter: blur(12px);
 
-        .orb.one {
-            width: 280px;
-            height: 280px;
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}}
 
-            background: #2563eb;
+.card:hover {{
+    transform: translateY(-6px);
 
-            top: 8%;
-            left: 5%;
-        }
+    border-color:
+        rgba(139,92,246,0.65);
+}}
 
-        .orb.two {
-            width: 240px;
-            height: 240px;
+.icon {{
+    font-size: 42px;
+}}
 
-            background: #7c3aed;
-
-            right: 5%;
-            top: 25%;
-
-            animation-delay: -3s;
-        }
+.card h3 {{
+    margin:
+        15px 0 8px;
+}}
 
-        .orb.three {
-            width: 220px;
-            height: 220px;
+.card p {{
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.5;
+}}
 
-            background: #0891b2;
+.footer {{
+    text-align: center;
+    margin-top: 70px;
+    padding-top: 25px;
 
-            left: 35%;
-            bottom: -80px;
+    border-top:
+        1px solid rgba(255,255,255,0.08);
 
-            animation-delay: -5s;
-        }
+    color: #64748b;
+}}
 
-        @keyframes floatOrb {
-
-            0%,
-            100% {
-                transform:
-                    translate3d(0,0,0)
-                    scale(1);
-            }
-
-            50% {
-                transform:
-                    translate3d(20px,-25px,0)
-                    scale(1.08);
-            }
-        }
-
-
-        /* ==================================================
-           PARTICLES
-        ================================================== */
-
-        .particles {
-            position: absolute;
-
-            inset: 0;
-        }
-
-        .particle {
-            position: absolute;
-
-            width: 3px;
-            height: 3px;
-
-            border-radius: 50%;
-
-            background: rgba(
-                255,
-                255,
-                255,
-                0.7
-            );
-
-            animation:
-                particleFloat
-                linear infinite;
-        }
-
-        .p1 {
-            left: 8%;
-            top: 20%;
-            animation-duration: 7s;
-        }
-
-        .p2 {
-            left: 20%;
-            top: 70%;
-            animation-duration: 10s;
-        }
-
-        .p3 {
-            left: 40%;
-            top: 15%;
-            animation-duration: 8s;
-        }
-
-        .p4 {
-            left: 65%;
-            top: 80%;
-            animation-duration: 11s;
-        }
-
-        .p5 {
-            left: 82%;
-            top: 25%;
-            animation-duration: 9s;
-        }
-
-        .p6 {
-            left: 92%;
-            top: 65%;
-            animation-duration: 12s;
-        }
-
-        @keyframes particleFloat {
-
-            from {
-                transform:
-                    translateY(30px);
-
-                opacity: 0;
-            }
-
-            20% {
-                opacity: 1;
-            }
-
-            80% {
-                opacity: 1;
-            }
-
-            to {
-                transform:
-                    translateY(-100px);
-
-                opacity: 0;
-            }
-        }
-
-
-        /* ==================================================
-           MAIN
-        ================================================== */
-
-        .page {
-            position: relative;
-
-            z-index: 1;
-
-            min-height: 100vh;
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: center;
-
-            padding: 30px 18px;
-        }
-
-        .container {
-            width: 100%;
-
-            max-width: 1000px;
-
-            text-align: center;
-        }
-
-
-        /* ==================================================
-           BRAND
-        ================================================== */
-
-        .brand {
-            margin-bottom: 35px;
-        }
-
-        .crown {
-            font-size: 54px;
-
-            display: inline-block;
-
-            animation:
-                crownFloat
-                3s ease-in-out infinite;
-
-            filter:
-                drop-shadow(
-                    0 0 18px
-                    rgba(255,255,255,0.25)
-                );
-        }
-
-        @keyframes crownFloat {
-
-            0%,
-            100% {
-                transform:
-                    translateY(0)
-                    rotate(-3deg);
-            }
-
-            50% {
-                transform:
-                    translateY(-9px)
-                    rotate(3deg);
-            }
-        }
-
-        .mastermind {
-            margin-top: 12px;
-
-            font-size: clamp(
-                38px,
-                8vw,
-                82px
-            );
-
-            font-weight: 900;
-
-            letter-spacing: 0.16em;
-
-            text-transform: uppercase;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    #ffffff,
-                    #93c5fd,
-                    #c4b5fd,
-                    #ffffff
-                );
-
-            background-size: 300% auto;
-
-            -webkit-background-clip: text;
-            background-clip: text;
-
-            color: transparent;
-
-            animation:
-                shineText
-                5s linear infinite;
-
-            text-shadow:
-                0 0 30px
-                rgba(96,165,250,0.12);
-        }
-
-        @keyframes shineText {
-
-            0% {
-                background-position: 0% center;
-            }
-
-            100% {
-                background-position: 300% center;
-            }
-        }
-
-        .line {
-            width: 120px;
-
-            height: 2px;
-
-            margin: 18px auto;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    #60a5fa,
-                    #a78bfa,
-                    transparent
-                );
-
-            animation:
-                linePulse
-                2s ease-in-out infinite;
-        }
-
-        @keyframes linePulse {
-
-            0%,
-            100% {
-                width: 100px;
-                opacity: 0.6;
-            }
-
-            50% {
-                width: 180px;
-                opacity: 1;
-            }
-        }
-
-        .cracker {
-            font-size: clamp(
-                25px,
-                5vw,
-                48px
-            );
-
-            font-weight: 800;
-
-            letter-spacing: 0.12em;
-
-            text-transform: uppercase;
-
-            color: #f8fafc;
-        }
-
-        .tagline {
-            margin-top: 14px;
-
-            color: #94a3b8;
-
-            font-size: 16px;
-
-            letter-spacing: 0.04em;
-        }
-
-
-        /* ==================================================
-           STATUS
-        ================================================== */
-
-        .status {
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 9px;
-
-            margin-top: 25px;
-
-            padding: 9px 16px;
-
-            border-radius: 999px;
-
-            background:
-                rgba(
-                    16,
-                    185,
-                    129,
-                    0.08
-                );
-
-            border:
-                1px solid
-                rgba(
-                    16,
-                    185,
-                    129,
-                    0.25
-                );
-
-            color: #a7f3d0;
-
-            font-size: 14px;
-
-            font-weight: 600;
-        }
-
-        .status-dot {
-            width: 9px;
-            height: 9px;
-
-            border-radius: 50%;
-
-            background: #34d399;
-
-            box-shadow:
-                0 0 0 0
-                rgba(52,211,153,0.6);
-
-            animation:
-                statusPulse
-                2s infinite;
-        }
-
-        @keyframes statusPulse {
-
-            0% {
-                box-shadow:
-                    0 0 0 0
-                    rgba(52,211,153,0.6);
-            }
-
-            70% {
-                box-shadow:
-                    0 0 0 10px
-                    rgba(52,211,153,0);
-            }
-
-            100% {
-                box-shadow:
-                    0 0 0 0
-                    rgba(52,211,153,0);
-            }
-        }
-
-
-        /* ==================================================
-           BUTTONS
-        ================================================== */
-
-        .actions {
-            margin-top: 35px;
-
-            display: flex;
-
-            justify-content: center;
-
-            gap: 14px;
-
-            flex-wrap: wrap;
-        }
-
-        .button {
-            position: relative;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 10px;
-
-            min-width: 190px;
-
-            padding: 15px 25px;
-
-            border-radius: 15px;
-
-            text-decoration: none;
-
-            color: white;
-
-            font-weight: 800;
-
-            font-size: 16px;
-
-            overflow: hidden;
-
-            transition:
-                transform 0.25s ease,
-                box-shadow 0.25s ease;
-        }
-
-        .button::before {
-            content: "";
-
-            position: absolute;
-
-            top: 0;
-            left: -100%;
-
-            width: 100%;
-            height: 100%;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(255,255,255,0.20),
-                    transparent
-                );
-
-            transition:
-                left 0.6s ease;
-        }
-
-        .button:hover::before {
-            left: 100%;
-        }
-
-        .button:hover {
-            transform:
-                translateY(-4px);
-        }
-
-        .primary {
-            background:
-                linear-gradient(
-                    135deg,
-                    #2563eb,
-                    #7c3aed
-                );
-
-            box-shadow:
-                0 15px 40px
-                rgba(
-                    37,
-                    99,
-                    235,
-                    0.25
-                );
-        }
-
-        .secondary {
-            background:
-                rgba(
-                    15,
-                    23,
-                    42,
-                    0.8
-                );
-
-            border:
-                1px solid
-                rgba(
-                    148,
-                    163,
-                    184,
-                    0.18
-                );
-        }
-
-
-        /* ==================================================
-           GAMES
-        ================================================== */
-
-        .games {
-            margin-top: 55px;
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fit,
-                    minmax(
-                        180px,
-                        1fr
-                    )
-                );
-
-            gap: 14px;
-        }
-
-        .game {
-            padding: 23px 15px;
-
-            border-radius: 19px;
-
-            background:
-                rgba(
-                    15,
-                    23,
-                    42,
-                    0.60
-                );
-
-            border:
-                1px solid
-                rgba(
-                    148,
-                    163,
-                    184,
-                    0.10
-                );
-
-            backdrop-filter:
-                blur(14px);
-
-            transition:
-                transform 0.25s ease,
-                border-color 0.25s ease,
-                background 0.25s ease;
-        }
-
-        .game:hover {
-            transform:
-                translateY(-5px);
-
-            border-color:
-                rgba(
-                    96,
-                    165,
-                    250,
-                    0.35
-                );
-
-            background:
-                rgba(
-                    30,
-                    41,
-                    59,
-                    0.75
-                );
-        }
-
-        .game-icon {
-            display: block;
-
-            font-size: 38px;
-
-            margin-bottom: 10px;
-
-            animation:
-                iconFloat
-                4s ease-in-out infinite;
-        }
-
-        @keyframes iconFloat {
-
-            0%,
-            100% {
-                transform:
-                    translateY(0);
-            }
-
-            50% {
-                transform:
-                    translateY(-4px);
-            }
-        }
-
-        .game-name {
-            color: #e2e8f0;
-
-            font-size: 15px;
-
-            font-weight: 700;
-        }
-
-
-        /* ==================================================
-           FOOTER
-        ================================================== */
-
-        .footer {
-            margin-top: 45px;
-
-            color: #64748b;
-
-            font-size: 13px;
-        }
-
-        .footer strong {
-            color: #94a3b8;
-        }
-
-
-        /* ==================================================
-           MOBILE
-        ================================================== */
-
-        @media (max-width: 600px) {
-
-            .page {
-                padding:
-                    35px 15px;
-            }
-
-            .brand {
-                margin-bottom: 25px;
-            }
-
-            .crown {
-                font-size: 42px;
-            }
-
-            .tagline {
-                font-size: 14px;
-            }
-
-            .actions {
-                flex-direction: column;
-
-                align-items: stretch;
-            }
-
-            .button {
-                width: 100%;
-            }
-
-            .games {
-                grid-template-columns:
-                    repeat(
-                        2,
-                        1fr
-                    );
-            }
-
-            .game {
-                padding:
-                    18px 10px;
-            }
-
-            .game-icon {
-                font-size: 31px;
-            }
-
-            .game-name {
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 380px) {
-
-            .games {
-                grid-template-columns:
-                    1fr;
-            }
-        }
-
-    </style>
+</style>
 
 </head>
 
-
 <body>
 
+<div class="container">
 
-    <!-- ====================================================
-         BACKGROUND
-    ===================================================== -->
+    <section class="hero">
 
-    <div class="background">
+        <div class="crown">
+            👑
+        </div>
 
-        <div class="orb one"></div>
-        <div class="orb two"></div>
-        <div class="orb three"></div>
+        <div class="title">
+            MASTERMIND
+        </div>
 
-        <div class="particles">
+        <div class="subtitle">
+            CRACKER GAMES
+        </div>
 
-            <div class="particle p1"></div>
-            <div class="particle p2"></div>
-            <div class="particle p3"></div>
-            <div class="particle p4"></div>
-            <div class="particle p5"></div>
-            <div class="particle p6"></div>
+        <div class="status">
+            <span class="dot"></span>
+            BOT ONLINE
+        </div>
+
+        <div class="buttons">
+
+            <a
+                class="btn games-btn"
+                href="{GAMES_URL}"
+            >
+                🎮 Open Games
+            </a>
+
+            <a
+                class="btn status-btn"
+                href="{HEALTH_URL}"
+            >
+                🟢 Check Status
+            </a>
 
         </div>
 
-    </div>
+    </section>
 
 
-    <!-- ====================================================
-         PAGE
-    ===================================================== -->
+    <h2 class="section-title">
+        🎮 Available Games
+    </h2>
 
-    <main class="page">
 
-        <div class="container">
+    <section class="games">
 
-
-            <!-- BRAND -->
-
-            <section class="brand">
-
-                <div class="crown">
-                    👑
-                </div>
-
-                <div class="mastermind">
-                    MASTERMIND
-                </div>
-
-                <div class="line"></div>
-
-                <div class="cracker">
-                    CRACKER GAMES
-                </div>
-
-                <div class="tagline">
-                    ⚡ Play. Compete. Have Fun.
-                </div>
-
-                <div class="status">
-
-                    <span class="status-dot"></span>
-
-                    BOT ONLINE
-
-                </div>
-
-            </section>
-
-
-            <!-- ACTIONS -->
-
-            <section class="actions">
-
-                <a
-                    class="button primary"
-                    href="/games"
-                >
-                    🎮 Open Games
-                </a>
-
-                <a
-                    class="button secondary"
-                    href="/health"
-                >
-                    🟢 Check Status
-                </a>
-
-            </section>
-
-
-            <!-- GAMES -->
-
-            <section class="games">
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🏎️
-                    </span>
-
-                    <span class="game-name">
-                        Car Racing
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🥊
-                    </span>
-
-                    <span class="game-name">
-                        Fighting Arena
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🚀
-                    </span>
-
-                    <span class="game-name">
-                        Space Shooter
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🏃
-                    </span>
-
-                    <span class="game-name">
-                        Endless Runner
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        ⚽
-                    </span>
-
-                    <span class="game-name">
-                        Penalty Shootout
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🏀
-                    </span>
-
-                    <span class="game-name">
-                        Basketball
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🏹
-                    </span>
-
-                    <span class="game-name">
-                        Archery
-                    </span>
-
-                </div>
-
-
-                <div class="game">
-
-                    <span class="game-icon">
-                        🎯
-                    </span>
-
-                    <span class="game-name">
-                        Target Shooter
-                    </span>
-
-                </div>
-
-
-            </section>
-
-
-            <!-- FOOTER -->
-
-            <footer class="footer">
-
-                Crafted by
-                <strong>
-                    MASTERMIND
-                </strong>
-                •
-                <strong>
-                    CRACKER GAMES
-                </strong>
-
-            </footer>
-
-
+        <div class="card">
+            <div class="icon">🏎️</div>
+            <h3>Car Racing</h3>
+            <p>Race your car and beat the high score.</p>
         </div>
 
-    </main>
+        <div class="card">
+            <div class="icon">🥊</div>
+            <h3>Fighting Arena</h3>
+            <p>Real-time fighting action.</p>
+        </div>
 
+        <div class="card">
+            <div class="icon">🚀</div>
+            <h3>Space Shooter</h3>
+            <p>Destroy enemies and survive.</p>
+        </div>
+
+        <div class="card">
+            <div class="icon">🏃</div>
+            <h3>Endless Runner</h3>
+            <p>Run as far as possible.</p>
+        </div>
+
+        <div class="card">
+            <div class="icon">⚽</div>
+            <h3>Penalty Shootout</h3>
+            <p>Score goals and beat the keeper.</p>
+        </div>
+
+        <div class="card">
+            <div class="icon">🏀</div>
+            <h3>Basketball</h3>
+            <p>Take shots and build your score.</p>
+        </div>
+
+        <div class="card">
+            <div class="icon">🏹</div>
+            <h3>Archery</h3>
+            <p>Hit moving targets with precision.</p>
+        </div>
+
+        <div class="card">
+            <div class="icon">🎯</div>
+            <h3>Target Shooter</h3>
+            <p>React quickly and hit every target.</p>
+        </div>
+
+    </section>
+
+
+    <footer class="footer">
+        Crafted by MASTERMIND • CRACKER GAMES
+    </footer>
+
+</div>
 
 </body>
-
 </html>
 """
 
-    return Response(
-        html,
-        status=HTTPStatus.OK,
-        mimetype="text/html",
-    )
+    return Response(html, mimetype="text/html")
 
 
 # ============================================================
@@ -1246,21 +558,15 @@ def home():
 # ============================================================
 
 @app.route("/games")
-def games():
-
+def games_page():
     return send_from_directory(
         WEBAPP_DIR,
         "index.html",
     )
 
 
-# ============================================================
-# MINI APP STATIC FILES
-# ============================================================
-
 @app.route("/games/<path:filename>")
 def games_static(filename):
-
     return send_from_directory(
         WEBAPP_DIR,
         filename,
@@ -1273,10 +579,9 @@ def games_static(filename):
 
 @app.route("/health")
 def health():
-
     return Response(
-        "CRACKER GAMES BOT IS ONLINE",
-        status=HTTPStatus.OK,
+        "CRACKER GAMES OK",
+        status=200,
         mimetype="text/plain",
     )
 
@@ -1285,24 +590,19 @@ def health():
 # TELEGRAM WEBHOOK
 # ============================================================
 
-@app.route(
-    "/telegram",
-    methods=["POST"],
-)
+@app.route("/telegram", methods=["POST"])
 def telegram_webhook():
 
     try:
-
         data = request.get_json(
             force=True,
             silent=True,
         )
 
         if not data:
-
             return Response(
                 "Bad Request",
-                status=HTTPStatus.BAD_REQUEST,
+                status=400,
             )
 
         update = Update.de_json(
@@ -1310,29 +610,26 @@ def telegram_webhook():
             telegram_app.bot,
         )
 
-        telegram_app.update_queue.put_nowait(
-            update,
-        )
+        telegram_app.update_queue.put_nowait(update)
 
         return Response(
             "OK",
-            status=HTTPStatus.OK,
+            status=200,
         )
 
     except Exception:
-
         logger.exception(
-            "Error processing Telegram webhook"
+            "Telegram webhook error"
         )
 
         return Response(
             "Internal Server Error",
-            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            status=500,
         )
 
 
 # ============================================================
-# MAIN
+# START SERVER
 # ============================================================
 
 async def main():
@@ -1352,108 +649,93 @@ async def main():
     )
 
     logger.info(
-        "Health URL: %s",
-        HEALTH_URL,
-    )
-
-    logger.info(
-        "Telegram webhook: %s",
+        "Webhook URL: %s",
         TELEGRAM_WEBHOOK_URL,
     )
 
 
-    # ========================================================
-    # TELEGRAM COMMAND MENU
-    # ========================================================
+    # --------------------------------------------------------
+    # Telegram Menu
+    #
+    # IMPORTANT:
+    # Menu button now directly opens Render landing page.
+    # --------------------------------------------------------
+
+    await telegram_app.bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="🚀 On Bot",
+            web_app=WebAppInfo(
+                url=LANDING_URL
+            ),
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # Commands
+    # --------------------------------------------------------
 
     await telegram_app.bot.set_my_commands(
         [
             BotCommand(
-                "onbot",
-                "🚀 On Bot",
+                "start",
+                "🏠 Start",
             ),
-
             BotCommand(
                 "games",
                 "🎮 Games",
+            ),
+            BotCommand(
+                "onbot",
+                "🚀 On Bot",
             ),
         ]
     )
 
 
-    # ========================================================
-    # MENU BUTTON
-    # ========================================================
-
-    await telegram_app.bot.set_chat_menu_button(
-        menu_button=MenuButtonCommands()
-    )
-
-
-    # ========================================================
-    # WEBHOOK
-    # ========================================================
+    # --------------------------------------------------------
+    # Webhook
+    # --------------------------------------------------------
 
     await telegram_app.bot.set_webhook(
         url=TELEGRAM_WEBHOOK_URL,
-
         allowed_updates=Update.ALL_TYPES,
-
         drop_pending_updates=True,
     )
 
 
-    # ========================================================
-    # ASGI
-    # ========================================================
+    # --------------------------------------------------------
+    # Flask → ASGI
+    # --------------------------------------------------------
 
-    asgi_app = WsgiToAsgi(
-        app
-    )
+    asgi_app = WsgiToAsgi(app)
 
-
-    # ========================================================
-    # UVICORN
-    # ========================================================
 
     config = uvicorn.Config(
         asgi_app,
-
         host="0.0.0.0",
-
         port=PORT,
-
         log_level="info",
     )
 
-    server = uvicorn.Server(
-        config
-    )
+    server = uvicorn.Server(config)
 
 
-    # ========================================================
-    # START
-    # ========================================================
+    # --------------------------------------------------------
+    # Telegram application lifecycle
+    # --------------------------------------------------------
 
     async with telegram_app:
 
         await telegram_app.start()
 
         logger.info(
-            "Telegram application started."
+            "CRACKER GAMES BOT IS ONLINE"
         )
 
-        try:
+        await server.serve()
 
-            await server.serve()
-
-        finally:
-
-            logger.info(
-                "Stopping Telegram application..."
-            )
-
-            await telegram_app.stop()
+        await telegram_app.stop()
 
 
 # ============================================================
@@ -1461,15 +743,4 @@ async def main():
 # ============================================================
 
 if __name__ == "__main__":
-
-    try:
-
-        asyncio.run(
-            main()
-        )
-
-    except KeyboardInterrupt:
-
-        logger.info(
-            "CRACKER GAMES stopped."
-        )
+    asyncio.run(main())

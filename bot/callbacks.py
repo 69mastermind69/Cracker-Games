@@ -1,3 +1,4 @@
+
 # bot/callbacks.py
 
 from telegram import Update
@@ -28,7 +29,11 @@ async def button_callback(
     context: ContextTypes.DEFAULT_TYPE,
 ):
     query = update.callback_query
-    data = query.data
+
+    if query is None:
+        return
+
+    data = query.data or ""
 
     # Answer callback once
     await query.answer()
@@ -41,11 +46,10 @@ async def button_callback(
         await show_games_menu(query)
         return
 
-    # ========================================================
-    # MAIN GAMES
-    # ========================================================
 
-    # ---------------- DICE ----------------
+    # ========================================================
+    # DICE
+    # ========================================================
 
     if data == "game:dice":
         from bot.games.dice import start_dice
@@ -53,7 +57,10 @@ async def button_callback(
         await start_dice(query)
         return
 
-    # ---------------- COIN ----------------
+
+    # ========================================================
+    # COIN
+    # ========================================================
 
     if data == "game:coin":
         from bot.games.coin import start_coin
@@ -61,7 +68,10 @@ async def button_callback(
         await start_coin(query)
         return
 
-    # ---------------- ROCK PAPER SCISSORS ----------------
+
+    # ========================================================
+    # ROCK PAPER SCISSORS
+    # ========================================================
 
     if data == "game:rps":
         from bot.games.rps import start_rps
@@ -75,21 +85,31 @@ async def button_callback(
         await handle_rps(query, data)
         return
 
-    # ---------------- NUMBER GUESS ----------------
+
+    # ========================================================
+    # NUMBER GUESS
+    # ========================================================
+
+    # IMPORTANT:
+    # File = number_guess.py
+    # Function = start_number_guess()
 
     if data == "game:number":
-        from bot.games.number import start_number
+        from bot.games.number_guess import start_number_guess
 
-        await start_number(query)
+        await start_number_guess(query)
         return
 
     if data.startswith("number:"):
-        from bot.games.number import handle_number
+        from bot.games.number_guess import handle_number_guess
 
-        await handle_number(query, data)
+        await handle_number_guess(query, data)
         return
 
-    # ---------------- QUIZ ----------------
+
+    # ========================================================
+    # QUIZ
+    # ========================================================
 
     if data == "game:quiz":
         from bot.games.quiz import start_quiz
@@ -109,7 +129,10 @@ async def button_callback(
         await handle_quiz_answer(query, data)
         return
 
-    # ---------------- WORD SCRAMBLE ----------------
+
+    # ========================================================
+    # WORD SCRAMBLE
+    # ========================================================
 
     if data == "game:scramble":
         from bot.games.scramble import start_scramble
@@ -123,7 +146,10 @@ async def button_callback(
         await handle_scramble(query, data)
         return
 
-    # ---------------- HANGMAN ----------------
+
+    # ========================================================
+    # HANGMAN
+    # ========================================================
 
     if data == "game:hangman":
         from bot.games.hangman import start_hangman
@@ -137,21 +163,31 @@ async def button_callback(
         await handle_hangman(query, data)
         return
 
-    # ---------------- TIC TAC TOE ----------------
+
+    # ========================================================
+    # TIC TAC TOE
+    # ========================================================
+
+    # IMPORTANT:
+    # File = tictactoe.py
+    # Function = start_tictactoe()
 
     if data == "game:ttt":
-        from bot.games.tictactoe import start_ttt
+        from bot.games.tictactoe import start_tictactoe
 
-        await start_ttt(query)
+        await start_tictactoe(query)
         return
 
     if data.startswith("ttt:"):
-        from bot.games.tictactoe import handle_ttt
+        from bot.games.tictactoe import handle_tictactoe
 
-        await handle_ttt(query, data)
+        await handle_tictactoe(query, data)
         return
 
-    # ---------------- CONNECT FOUR ----------------
+
+    # ========================================================
+    # CONNECT FOUR
+    # ========================================================
 
     if data == "game:connect4":
         from bot.games.connect4 import start_connect4
@@ -165,7 +201,10 @@ async def button_callback(
         await handle_connect4(query, data)
         return
 
-    # ---------------- MATH CHALLENGE ----------------
+
+    # ========================================================
+    # MATH CHALLENGE
+    # ========================================================
 
     if data == "game:math":
         from bot.games.math_challenge import start_math
@@ -179,7 +218,10 @@ async def button_callback(
         await handle_math(query, data)
         return
 
-    # ---------------- MEMORY ----------------
+
+    # ========================================================
+    # MEMORY
+    # ========================================================
 
     if data == "game:memory":
         from bot.games.memory import start_memory
@@ -193,19 +235,27 @@ async def button_callback(
         await handle_memory(query, data)
         return
 
-    # ---------------- HIGHER / LOWER ----------------
+
+    # ========================================================
+    # HIGHER / LOWER
+    # ========================================================
+
+    # IMPORTANT:
+    # File = higher_lower.py
+    # Function = start_higher_lower()
 
     if data == "game:higher":
-        from bot.games.higher_lower import start_higher
+        from bot.games.higher_lower import start_higher_lower
 
-        await start_higher(query)
+        await start_higher_lower(query)
         return
 
     if data.startswith("higher:"):
-        from bot.games.higher_lower import handle_higher
+        from bot.games.higher_lower import handle_higher_lower
 
-        await handle_higher(query, data)
+        await handle_higher_lower(query, data)
         return
+
 
     # ========================================================
     # EXTRA GAMES
@@ -217,6 +267,7 @@ async def button_callback(
         await handle_extra_game(query, data)
         return
 
+
     # ========================================================
     # UNKNOWN CALLBACK
     # ========================================================
@@ -227,3 +278,4 @@ async def button_callback(
         parse_mode="Markdown",
         reply_markup=games_menu(),
     )
+

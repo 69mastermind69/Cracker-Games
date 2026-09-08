@@ -1,3 +1,4 @@
+
 # bot/handlers.py
 
 from telegram import (
@@ -54,7 +55,8 @@ async def help_command(
     await update.message.reply_text(
         "ℹ️ *Cracker Games Help*\n\n"
         "🎮 Games — সব available games দেখাবে\n"
-        "🆕 More Free Games — নতুন mini games\n\n"
+        "🆕 More Free Games — নতুন mini games\n"
+        "👨‍💻 Developer — developer information\n\n"
         "কোনো permanent user profile বা game history "
         "সংরক্ষণ করা হয় না।",
         parse_mode="Markdown",
@@ -68,6 +70,7 @@ async def help_command(
 
 def games_menu():
     keyboard = [
+
         # ----------------------------------------------------
         # ORIGINAL GAMES
         # ----------------------------------------------------
@@ -142,6 +145,17 @@ def games_menu():
         ],
 
         # ----------------------------------------------------
+        # DEVELOPER
+        # ----------------------------------------------------
+
+        [
+            InlineKeyboardButton(
+                "👨‍💻 Developer",
+                callback_data="developer",
+            ),
+        ],
+
+        # ----------------------------------------------------
         # EXTRA GAMES
         # ----------------------------------------------------
 
@@ -194,7 +208,9 @@ async def about_command(
         "💾 No permanent game database\n"
         "🎯 Temporary game state only\n"
         "🆓 Free to play\n\n"
-        "Developer: *MASTERMIND*",
+        "Developer: *MASTERMIND*\n"
+        "Telegram: *@Do_x_Die*",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
+

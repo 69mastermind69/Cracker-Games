@@ -1,3 +1,5 @@
+# app.py
+
 import os
 import asyncio
 import logging
@@ -11,22 +13,32 @@ import uvicorn
 from telegram import (
     Update,
     BotCommand,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
     MenuButtonCommands,
+    WebAppInfo,
 )
 
 from telegram.ext import (
     Application,
     CommandHandler,
     CallbackQueryHandler,
+    ContextTypes,
 )
 
-from bot.handlers import start_command, games_command
-from bot.callbacks import button_callback
+from bot.handlers import (
+    start_command,
+    games_command,
+)
+
+from bot.callbacks import (
+    button_callback,
+)
 
 
-# =========================================================
+# ============================================================
 # LOGGING
-# =========================================================
+# ============================================================
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -36,13 +48,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# =========================================================
+# ============================================================
 # ENVIRONMENT
-# =========================================================
+# ============================================================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "").rstrip("/")
-PORT = int(os.getenv("PORT", "10000"))
+
+WEBHOOK_URL = os.getenv(
+    "WEBHOOK_URL",
+    "https://cracker-games.onrender.com",
+).rstrip("/")
+
+PORT = int(
+    os.getenv(
+        "PORT",
+        "10000",
+    )
+)
+
+
+# ============================================================
+# VALIDATION
+# ============================================================
 
 if not BOT_TOKEN:
     raise RuntimeError(
@@ -55,16 +82,21 @@ if not WEBHOOK_URL:
     )
 
 
-# =========================================================
-# FLASK APP
-# =========================================================
+# ============================================================
+# URL CONFIG
+# ============================================================
 
-web_app = Flask(__name__)
+LANDING_URL = WEBHOOK_URL
+GAMES_URL = f"{WEBHOOK_URL}/games"
+HEALTH_URL = f"{WEBHOOK_URL}/health"
+TELEGRAM_WEBHOOK_URL = f"{WEBHOOK_URL}/telegram"
 
 
-# =========================================================
-# WEBAPP DIRECTORY
-# =========================================================
+# ============================================================
+# FLASK
+# ============================================================
+
+app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
@@ -76,9 +108,9 @@ WEBAPP_DIR = os.path.join(
 )
 
 
-# =========================================================
+# ============================================================
 # TELEGRAM APPLICATION
-# =========================================================
+# ============================================================
 
 telegram_app = (
     Application.builder()
@@ -88,24 +120,47 @@ telegram_app = (
 )
 
 
-# =========================================================
-# ON BOT COMMAND
-# =========================================================
+# ============================================================
+# ON BOT
+# ============================================================
 
-async def on_bot_command(update: Update, context):
+async def on_bot_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    """
+    /onbot
+
+    Shows an animated Render landing-page button.
+    """
 
     if not update.effective_message:
         return
 
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "🚀 Open MASTERMIND",
+                url=LANDING_URL,
+            )
+        ],
+    ]
+
     await update.effective_message.reply_text(
-        "🟢 CRACKER GAMES BOT IS ONLINE!\n\n"
-        "🎮 Games খুলতে নিচের Menu ব্যবহার করো।"
+        "🚀 *MASTERMIND*\n\n"
+        "🎮 *CRACKER GAMES*\n\n"
+        "🟢 Bot control panel is ready.\n"
+        "👇 Open the page below.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(
+            keyboard
+        ),
     )
 
 
-# =========================================================
+# ============================================================
 # TELEGRAM HANDLERS
-# =========================================================
+# ============================================================
 
 telegram_app.add_handler(
     CommandHandler(
@@ -135,1025 +190,818 @@ telegram_app.add_handler(
 )
 
 
-# =========================================================
-# PREMIUM LANDING PAGE
-# =========================================================
+# ============================================================
+# ANIMATED LANDING PAGE
+# ============================================================
 
-@web_app.get("/")
+@app.route("/")
 def home():
 
-    return """
+    html = """
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<meta
-    name="theme-color"
-    content="#030305"
->
+    <meta
+        name="theme-color"
+        content="#050816"
+    >
 
-<title>CRACKER GAMES — MASTERMIND</title>
+    <title>
+        MASTERMIND • CRACKER GAMES
+    </title>
 
+    <style>
 
-<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-/* =====================================================
-   RESET
-===================================================== */
+        html {
+            scroll-behavior: smooth;
+        }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+        body {
+            min-height: 100vh;
 
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
 
-/* =====================================================
-   BODY
-===================================================== */
+            color: #ffffff;
 
-html {
-    scroll-behavior: smooth;
-}
+            overflow-x: hidden;
 
-body {
+            background:
+                radial-gradient(
+                    circle at 50% -10%,
+                    rgba(59,130,246,0.28),
+                    transparent 38%
+                ),
+                radial-gradient(
+                    circle at 0% 100%,
+                    rgba(124,58,237,0.20),
+                    transparent 35%
+                ),
+                #030712;
+        }
 
-    min-height: 100vh;
 
-    overflow: hidden;
+        /* ==================================================
+           BACKGROUND
+        ================================================== */
 
-    font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+        .background {
+            position: fixed;
 
-    color: white;
+            inset: 0;
 
-    background: #030305;
+            overflow: hidden;
 
-    position: relative;
-}
+            pointer-events: none;
 
+            z-index: 0;
+        }
 
-/* =====================================================
-   ANIMATED ATMOSPHERE
-===================================================== */
+        .orb {
+            position: absolute;
 
-body::before {
+            border-radius: 50%;
 
-    content: "";
+            filter: blur(70px);
 
-    position: fixed;
+            opacity: 0.30;
 
-    inset: -35%;
+            animation:
+                floatOrb 8s ease-in-out infinite;
+        }
 
-    z-index: -10;
+        .orb.one {
+            width: 280px;
+            height: 280px;
 
-    background:
+            background: #2563eb;
 
-        radial-gradient(
-            circle at 15% 20%,
-            rgba(0, 229, 255, 0.16),
-            transparent 28%
-        ),
+            top: 8%;
+            left: 5%;
+        }
 
-        radial-gradient(
-            circle at 85% 20%,
-            rgba(124, 58, 237, 0.17),
-            transparent 30%
-        ),
+        .orb.two {
+            width: 240px;
+            height: 240px;
 
-        radial-gradient(
-            circle at 50% 90%,
-            rgba(0, 255, 153, 0.09),
-            transparent 30%
-        );
+            background: #7c3aed;
+
+            right: 5%;
+            top: 25%;
+
+            animation-delay: -3s;
+        }
 
-    filter: blur(35px);
+        .orb.three {
+            width: 220px;
+            height: 220px;
 
-    animation:
-        atmosphere 12s ease-in-out infinite alternate;
-}
+            background: #0891b2;
 
+            left: 35%;
+            bottom: -80px;
 
-@keyframes atmosphere {
+            animation-delay: -5s;
+        }
 
-    0% {
-        transform:
-            scale(1)
-            rotate(0deg);
-    }
+        @keyframes floatOrb {
 
-    100% {
-        transform:
-            scale(1.18)
-            rotate(5deg);
-    }
-}
+            0%,
+            100% {
+                transform:
+                    translate3d(0,0,0)
+                    scale(1);
+            }
 
+            50% {
+                transform:
+                    translate3d(20px,-25px,0)
+                    scale(1.08);
+            }
+        }
 
-/* =====================================================
-   GRID
-===================================================== */
 
-.grid {
+        /* ==================================================
+           PARTICLES
+        ================================================== */
 
-    position: fixed;
+        .particles {
+            position: absolute;
 
-    inset: 0;
+            inset: 0;
+        }
 
-    z-index: -8;
+        .particle {
+            position: absolute;
 
-    opacity: 0.15;
+            width: 3px;
+            height: 3px;
 
-    background-image:
+            border-radius: 50%;
 
-        linear-gradient(
-            rgba(255,255,255,0.04) 1px,
-            transparent 1px
-        ),
+            background: rgba(
+                255,
+                255,
+                255,
+                0.7
+            );
 
-        linear-gradient(
-            90deg,
-            rgba(255,255,255,0.04) 1px,
-            transparent 1px
-        );
+            animation:
+                particleFloat
+                linear infinite;
+        }
 
-    background-size: 55px 55px;
+        .p1 {
+            left: 8%;
+            top: 20%;
+            animation-duration: 7s;
+        }
 
-    mask-image:
-        radial-gradient(
-            ellipse at center,
-            black 15%,
-            transparent 78%
-        );
+        .p2 {
+            left: 20%;
+            top: 70%;
+            animation-duration: 10s;
+        }
 
-    animation:
-        gridMove 18s linear infinite;
-}
+        .p3 {
+            left: 40%;
+            top: 15%;
+            animation-duration: 8s;
+        }
 
+        .p4 {
+            left: 65%;
+            top: 80%;
+            animation-duration: 11s;
+        }
 
-@keyframes gridMove {
+        .p5 {
+            left: 82%;
+            top: 25%;
+            animation-duration: 9s;
+        }
 
-    from {
-        transform: translateY(0);
-    }
+        .p6 {
+            left: 92%;
+            top: 65%;
+            animation-duration: 12s;
+        }
 
-    to {
-        transform: translateY(55px);
-    }
-}
+        @keyframes particleFloat {
 
+            from {
+                transform:
+                    translateY(30px);
 
-/* =====================================================
-   PARTICLES
-===================================================== */
+                opacity: 0;
+            }
 
-.particles {
+            20% {
+                opacity: 1;
+            }
 
-    position: fixed;
+            80% {
+                opacity: 1;
+            }
 
-    inset: 0;
+            to {
+                transform:
+                    translateY(-100px);
 
-    z-index: -5;
+                opacity: 0;
+            }
+        }
 
-    pointer-events: none;
 
-    overflow: hidden;
-}
+        /* ==================================================
+           MAIN
+        ================================================== */
 
+        .page {
+            position: relative;
 
-.particle {
+            z-index: 1;
 
-    position: absolute;
+            min-height: 100vh;
 
-    width: 3px;
+            display: flex;
 
-    height: 3px;
+            justify-content: center;
 
-    border-radius: 50%;
+            align-items: center;
 
-    background: rgba(255,255,255,0.8);
+            padding: 30px 18px;
+        }
 
-    box-shadow:
-        0 0 14px rgba(255,255,255,0.9);
+        .container {
+            width: 100%;
 
-    animation:
-        floatParticle linear infinite;
-}
+            max-width: 1000px;
 
+            text-align: center;
+        }
 
-@keyframes floatParticle {
 
-    from {
+        /* ==================================================
+           BRAND
+        ================================================== */
 
-        transform:
-            translateY(110vh)
-            scale(0.5);
+        .brand {
+            margin-bottom: 35px;
+        }
 
-        opacity: 0;
-    }
+        .crown {
+            font-size: 54px;
 
-    15% {
-        opacity: 1;
-    }
+            display: inline-block;
 
-    85% {
-        opacity: 1;
-    }
+            animation:
+                crownFloat
+                3s ease-in-out infinite;
 
-    to {
+            filter:
+                drop-shadow(
+                    0 0 18px
+                    rgba(255,255,255,0.25)
+                );
+        }
 
-        transform:
-            translateY(-10vh)
-            scale(1.25);
+        @keyframes crownFloat {
 
-        opacity: 0;
-    }
-}
+            0%,
+            100% {
+                transform:
+                    translateY(0)
+                    rotate(-3deg);
+            }
 
+            50% {
+                transform:
+                    translateY(-9px)
+                    rotate(3deg);
+            }
+        }
 
-/* =====================================================
-   SCANLINES
-===================================================== */
+        .mastermind {
+            margin-top: 12px;
 
-.scanlines {
+            font-size: clamp(
+                38px,
+                8vw,
+                82px
+            );
 
-    position: fixed;
+            font-weight: 900;
 
-    inset: 0;
+            letter-spacing: 0.16em;
 
-    z-index: 50;
+            text-transform: uppercase;
 
-    pointer-events: none;
+            background:
+                linear-gradient(
+                    90deg,
+                    #ffffff,
+                    #93c5fd,
+                    #c4b5fd,
+                    #ffffff
+                );
 
-    opacity: 0.13;
+            background-size: 300% auto;
 
-    background:
-        linear-gradient(
-            transparent 50%,
-            rgba(255,255,255,0.025) 50%
-        );
+            -webkit-background-clip: text;
+            background-clip: text;
 
-    background-size:
-        100% 4px;
-}
+            color: transparent;
 
+            animation:
+                shineText
+                5s linear infinite;
 
-/* =====================================================
-   NAVIGATION
-===================================================== */
+            text-shadow:
+                0 0 30px
+                rgba(96,165,250,0.12);
+        }
 
-.nav {
+        @keyframes shineText {
 
-    width: min(1150px, 92%);
+            0% {
+                background-position: 0% center;
+            }
 
-    margin: auto;
+            100% {
+                background-position: 300% center;
+            }
+        }
 
-    padding: 25px 0;
+        .line {
+            width: 120px;
 
-    display: flex;
+            height: 2px;
 
-    justify-content: space-between;
+            margin: 18px auto;
 
-    align-items: center;
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    #60a5fa,
+                    #a78bfa,
+                    transparent
+                );
 
-    position: relative;
+            animation:
+                linePulse
+                2s ease-in-out infinite;
+        }
 
-    z-index: 10;
-}
+        @keyframes linePulse {
 
+            0%,
+            100% {
+                width: 100px;
+                opacity: 0.6;
+            }
 
-.brand {
+            50% {
+                width: 180px;
+                opacity: 1;
+            }
+        }
 
-    display: flex;
+        .cracker {
+            font-size: clamp(
+                25px,
+                5vw,
+                48px
+            );
 
-    align-items: center;
+            font-weight: 800;
 
-    gap: 12px;
+            letter-spacing: 0.12em;
 
-    font-size: 13px;
+            text-transform: uppercase;
 
-    font-weight: 900;
+            color: #f8fafc;
+        }
 
-    letter-spacing: 3px;
-}
+        .tagline {
+            margin-top: 14px;
 
+            color: #94a3b8;
 
-.brand-icon {
+            font-size: 16px;
 
-    width: 40px;
+            letter-spacing: 0.04em;
+        }
 
-    height: 40px;
 
-    display: grid;
+        /* ==================================================
+           STATUS
+        ================================================== */
 
-    place-items: center;
+        .status {
+            display: inline-flex;
 
-    border-radius: 13px;
+            align-items: center;
 
-    background:
-        linear-gradient(
-            135deg,
-            rgba(0,229,255,0.15),
-            rgba(124,58,237,0.18)
-        );
+            gap: 9px;
 
-    border:
-        1px solid
-        rgba(255,255,255,0.12);
+            margin-top: 25px;
 
-    box-shadow:
-        0 0 30px
-        rgba(0,229,255,0.13);
+            padding: 9px 16px;
 
-    font-size: 20px;
-}
+            border-radius: 999px;
 
+            background:
+                rgba(
+                    16,
+                    185,
+                    129,
+                    0.08
+                );
 
-.nav-status {
+            border:
+                1px solid
+                rgba(
+                    16,
+                    185,
+                    129,
+                    0.25
+                );
 
-    display: flex;
+            color: #a7f3d0;
 
-    align-items: center;
+            font-size: 14px;
 
-    gap: 9px;
+            font-weight: 600;
+        }
 
-    padding: 9px 15px;
+        .status-dot {
+            width: 9px;
+            height: 9px;
 
-    border-radius: 999px;
+            border-radius: 50%;
 
-    background:
-        rgba(255,255,255,0.035);
+            background: #34d399;
 
-    border:
-        1px solid
-        rgba(255,255,255,0.08);
+            box-shadow:
+                0 0 0 0
+                rgba(52,211,153,0.6);
 
-    backdrop-filter: blur(15px);
+            animation:
+                statusPulse
+                2s infinite;
+        }
 
-    color: #8d98aa;
+        @keyframes statusPulse {
 
-    font-size: 10px;
+            0% {
+                box-shadow:
+                    0 0 0 0
+                    rgba(52,211,153,0.6);
+            }
 
-    letter-spacing: 1.5px;
-}
+            70% {
+                box-shadow:
+                    0 0 0 10px
+                    rgba(52,211,153,0);
+            }
 
+            100% {
+                box-shadow:
+                    0 0 0 0
+                    rgba(52,211,153,0);
+            }
+        }
 
-.nav-dot {
 
-    width: 7px;
+        /* ==================================================
+           BUTTONS
+        ================================================== */
 
-    height: 7px;
+        .actions {
+            margin-top: 35px;
 
-    border-radius: 50%;
+            display: flex;
 
-    background: #31ff91;
+            justify-content: center;
 
-    box-shadow:
-        0 0 15px #31ff91;
+            gap: 14px;
 
-    animation:
-        pulse 1.5s ease-in-out infinite;
-}
+            flex-wrap: wrap;
+        }
 
+        .button {
+            position: relative;
 
-@keyframes pulse {
+            display: inline-flex;
 
-    50% {
+            align-items: center;
 
-        transform: scale(1.55);
+            justify-content: center;
 
-        opacity: 0.5;
-    }
-}
+            gap: 10px;
 
+            min-width: 190px;
 
-/* =====================================================
-   HERO
-===================================================== */
+            padding: 15px 25px;
 
-.hero {
+            border-radius: 15px;
 
-    width: min(1150px, 92%);
+            text-decoration: none;
 
-    min-height:
-        calc(100vh - 90px);
+            color: white;
 
-    margin: auto;
+            font-weight: 800;
 
-    display: flex;
+            font-size: 16px;
 
-    justify-content: center;
+            overflow: hidden;
 
-    align-items: center;
+            transition:
+                transform 0.25s ease,
+                box-shadow 0.25s ease;
+        }
 
-    text-align: center;
+        .button::before {
+            content: "";
 
-    position: relative;
-}
+            position: absolute;
 
+            top: 0;
+            left: -100%;
 
-.hero-content {
+            width: 100%;
+            height: 100%;
 
-    width: 100%;
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255,255,255,0.20),
+                    transparent
+                );
 
-    max-width: 1000px;
+            transition:
+                left 0.6s ease;
+        }
 
-    padding:
-        30px
-        20px
-        80px;
+        .button:hover::before {
+            left: 100%;
+        }
 
-    animation:
-        heroEnter
-        1.2s
-        cubic-bezier(.2,.8,.2,1)
-        both;
+        .button:hover {
+            transform:
+                translateY(-4px);
+        }
 
-    transition:
-        transform
-        0.25s
-        ease-out;
-}
+        .primary {
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #7c3aed
+                );
 
+            box-shadow:
+                0 15px 40px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.25
+                );
+        }
 
-@keyframes heroEnter {
+        .secondary {
+            background:
+                rgba(
+                    15,
+                    23,
+                    42,
+                    0.8
+                );
 
-    from {
+            border:
+                1px solid
+                rgba(
+                    148,
+                    163,
+                    184,
+                    0.18
+                );
+        }
 
-        opacity: 0;
 
-        transform:
-            translateY(45px)
-            scale(0.96);
-    }
+        /* ==================================================
+           GAMES
+        ================================================== */
 
-    to {
+        .games {
+            margin-top: 55px;
 
-        opacity: 1;
+            display: grid;
 
-        transform:
-            translateY(0)
-            scale(1);
-    }
-}
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(
+                        180px,
+                        1fr
+                    )
+                );
 
+            gap: 14px;
+        }
 
-/* =====================================================
-   BADGE
-===================================================== */
+        .game {
+            padding: 23px 15px;
 
-.badge {
+            border-radius: 19px;
 
-    display: inline-flex;
+            background:
+                rgba(
+                    15,
+                    23,
+                    42,
+                    0.60
+                );
 
-    align-items: center;
+            border:
+                1px solid
+                rgba(
+                    148,
+                    163,
+                    184,
+                    0.10
+                );
 
-    gap: 9px;
+            backdrop-filter:
+                blur(14px);
 
-    padding: 10px 17px;
+            transition:
+                transform 0.25s ease,
+                border-color 0.25s ease,
+                background 0.25s ease;
+        }
 
-    border-radius: 999px;
+        .game:hover {
+            transform:
+                translateY(-5px);
 
-    background:
-        rgba(255,255,255,0.035);
+            border-color:
+                rgba(
+                    96,
+                    165,
+                    250,
+                    0.35
+                );
 
-    border:
-        1px solid
-        rgba(255,255,255,0.10);
+            background:
+                rgba(
+                    30,
+                    41,
+                    59,
+                    0.75
+                );
+        }
 
-    color: #919bad;
+        .game-icon {
+            display: block;
 
-    font-size: 10px;
+            font-size: 38px;
 
-    letter-spacing: 2.5px;
+            margin-bottom: 10px;
 
-    text-transform: uppercase;
+            animation:
+                iconFloat
+                4s ease-in-out infinite;
+        }
 
-    backdrop-filter:
-        blur(18px);
+        @keyframes iconFloat {
 
-    box-shadow:
+            0%,
+            100% {
+                transform:
+                    translateY(0);
+            }
 
-        inset 0 1px
-        rgba(255,255,255,0.06),
+            50% {
+                transform:
+                    translateY(-4px);
+            }
+        }
 
-        0 20px 60px
-        rgba(0,0,0,0.3);
+        .game-name {
+            color: #e2e8f0;
 
-    animation:
-        badgeFloat
-        4s
-        ease-in-out
-        infinite;
-}
+            font-size: 15px;
 
+            font-weight: 700;
+        }
 
-@keyframes badgeFloat {
 
-    50% {
-        transform: translateY(-5px);
-    }
-}
+        /* ==================================================
+           FOOTER
+        ================================================== */
 
+        .footer {
+            margin-top: 45px;
 
-.badge-icon {
+            color: #64748b;
 
-    color: #63e6ff;
+            font-size: 13px;
+        }
 
-    text-shadow:
-        0 0 15px
-        rgba(99,230,255,0.8);
+        .footer strong {
+            color: #94a3b8;
+        }
 
-    font-size: 14px;
-}
 
+        /* ==================================================
+           MOBILE
+        ================================================== */
 
-/* =====================================================
-   TITLE
-===================================================== */
+        @media (max-width: 600px) {
 
-.title {
+            .page {
+                padding:
+                    35px 15px;
+            }
 
-    margin-top: 28px;
+            .brand {
+                margin-bottom: 25px;
+            }
 
-    font-size:
-        clamp(45px, 9.5vw, 108px);
+            .crown {
+                font-size: 42px;
+            }
 
-    line-height: 0.88;
+            .tagline {
+                font-size: 14px;
+            }
 
-    font-weight: 950;
+            .actions {
+                flex-direction: column;
 
-    letter-spacing:
-        clamp(2px, 0.7vw, 8px);
+                align-items: stretch;
+            }
 
-    text-transform: uppercase;
+            .button {
+                width: 100%;
+            }
 
-    background:
+            .games {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        1fr
+                    );
+            }
 
-        linear-gradient(
-            105deg,
-            #ffffff 5%,
-            #7deaff 28%,
-            #ffffff 48%,
-            #bb83ff 72%,
-            #ffffff 95%
-        );
+            .game {
+                padding:
+                    18px 10px;
+            }
 
-    background-size: 250% auto;
+            .game-icon {
+                font-size: 31px;
+            }
 
-    -webkit-background-clip: text;
+            .game-name {
+                font-size: 13px;
+            }
+        }
 
-    background-clip: text;
+        @media (max-width: 380px) {
 
-    -webkit-text-fill-color: transparent;
+            .games {
+                grid-template-columns:
+                    1fr;
+            }
+        }
 
-    animation:
-        titleShine
-        6s
-        linear
-        infinite;
-
-    filter:
-        drop-shadow(
-            0 0 30px
-            rgba(0,220,255,0.14)
-        );
-}
-
-
-@keyframes titleShine {
-
-    from {
-        background-position: 0% center;
-    }
-
-    to {
-        background-position: 250% center;
-    }
-}
-
-
-/* =====================================================
-   TITLE GLOW
-===================================================== */
-
-.title::after {
-
-    content: "CRACKER GAMES";
-
-    position: absolute;
-
-    left: 50%;
-
-    transform:
-        translateX(-50%);
-
-    margin-top: 12px;
-
-    width: 100%;
-
-    font-size:
-        clamp(45px, 9.5vw, 108px);
-
-    line-height: 0.88;
-
-    font-weight: 950;
-
-    letter-spacing:
-        clamp(2px, 0.7vw, 8px);
-
-    color: transparent;
-
-    filter:
-        blur(35px);
-
-    opacity: 0.13;
-
-    z-index: -1;
-}
-
-
-/* =====================================================
-   DEVELOPER
-===================================================== */
-
-.developer {
-
-    margin-top: 28px;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    gap: 13px;
-
-    color: #7f899c;
-
-    font-size:
-        clamp(12px, 2vw, 16px);
-
-    letter-spacing: 5px;
-
-    text-transform: uppercase;
-}
-
-
-.developer-line {
-
-    width: 35px;
-
-    height: 1px;
-
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            #63e6ff
-        );
-}
-
-
-.developer-line.right {
-
-    background:
-        linear-gradient(
-            90deg,
-            #b57cff,
-            transparent
-        );
-}
-
-
-.developer strong {
-
-    color: #ffffff;
-
-    font-weight: 850;
-
-    text-shadow:
-        0 0 25px
-        rgba(255,255,255,0.2);
-}
-
-
-/* =====================================================
-   DESCRIPTION
-===================================================== */
-
-.description {
-
-    max-width: 620px;
-
-    margin:
-        30px auto 0;
-
-    color: #747f92;
-
-    font-size:
-        clamp(14px, 2vw, 17px);
-
-    line-height: 1.8;
-}
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-.status-card {
-
-    margin:
-        38px auto 0;
-
-    width: fit-content;
-
-    max-width: 90%;
-
-    padding:
-        14px 20px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    border-radius: 16px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255,255,255,0.065),
-            rgba(255,255,255,0.025)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,0.09);
-
-    backdrop-filter:
-        blur(22px);
-
-    box-shadow:
-
-        inset 0 1px
-        rgba(255,255,255,0.07),
-
-        0 25px 70px
-        rgba(0,0,0,0.4);
-
-    color: #909bae;
-
-    font-size: 11px;
-
-    letter-spacing: 1px;
-}
-
-
-.status-light {
-
-    width: 9px;
-
-    height: 9px;
-
-    border-radius: 50%;
-
-    background: #31ff91;
-
-    box-shadow:
-        0 0 20px
-        rgba(49,255,145,0.9);
-
-    animation:
-        pulse 1.4s
-        ease-in-out
-        infinite;
-}
-
-
-.status-card strong {
-
-    color: #5effa8;
-}
-
-
-/* =====================================================
-   FLOATING ORBS
-===================================================== */
-
-.orb {
-
-    position: absolute;
-
-    border-radius: 50%;
-
-    pointer-events: none;
-
-    filter: blur(4px);
-}
-
-
-.orb-one {
-
-    width: 180px;
-
-    height: 180px;
-
-    left: -40px;
-
-    top: 18%;
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(0,229,255,0.11),
-            transparent 70%
-        );
-
-    animation:
-        orbOne
-        8s
-        ease-in-out
-        infinite;
-}
-
-
-.orb-two {
-
-    width: 220px;
-
-    height: 220px;
-
-    right: -50px;
-
-    bottom: 12%;
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(145,70,255,0.12),
-            transparent 70%
-        );
-
-    animation:
-        orbTwo
-        10s
-        ease-in-out
-        infinite;
-}
-
-
-@keyframes orbOne {
-
-    50% {
-
-        transform:
-            translate(35px,-30px)
-            scale(1.15);
-    }
-}
-
-
-@keyframes orbTwo {
-
-    50% {
-
-        transform:
-            translate(-35px,25px)
-            scale(0.85);
-    }
-}
-
-
-/* =====================================================
-   FOOTER
-===================================================== */
-
-.footer {
-
-    position: absolute;
-
-    left: 0;
-
-    right: 0;
-
-    bottom: 22px;
-
-    text-align: center;
-
-    color: #3e4654;
-
-    font-size: 9px;
-
-    letter-spacing: 3px;
-
-    text-transform: uppercase;
-}
-
-
-/* =====================================================
-   MOBILE
-===================================================== */
-
-@media (max-width: 600px) {
-
-    body {
-        overflow: hidden;
-    }
-
-    .nav {
-        padding-top: 18px;
-    }
-
-    .brand {
-        font-size: 10px;
-        letter-spacing: 2px;
-    }
-
-    .brand-icon {
-        width: 34px;
-        height: 34px;
-        font-size: 17px;
-    }
-
-    .nav-status {
-        padding: 8px 10px;
-        font-size: 8px;
-    }
-
-    .hero-content {
-        padding-top: 20px;
-    }
-
-    .title {
-        letter-spacing: 2px;
-    }
-
-    .developer {
-        letter-spacing: 2.5px;
-        gap: 8px;
-    }
-
-    .developer-line {
-        width: 20px;
-    }
-
-    .description {
-        padding: 0 12px;
-        font-size: 13px;
-    }
-
-    .status-card {
-        font-size: 9px;
-        padding: 12px 14px;
-    }
-
-    .orb-one {
-        left: -100px;
-    }
-
-    .orb-two {
-        right: -120px;
-    }
-
-}
-
-
-/* =====================================================
-   REDUCED MOTION
-===================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-
-    *,
-    *::before,
-    *::after {
-
-        animation-duration:
-            0.01ms !important;
-
-        animation-iteration-count:
-            1 !important;
-    }
-}
-
-</style>
+    </style>
 
 </head>
 
@@ -1161,224 +1009,224 @@ body::before {
 <body>
 
 
-<!-- =====================================================
-     BACKGROUND
-===================================================== -->
+    <!-- ====================================================
+         BACKGROUND
+    ===================================================== -->
 
-<div class="grid"></div>
+    <div class="background">
 
-<div class="particles"></div>
+        <div class="orb one"></div>
+        <div class="orb two"></div>
+        <div class="orb three"></div>
 
-<div class="scanlines"></div>
+        <div class="particles">
 
+            <div class="particle p1"></div>
+            <div class="particle p2"></div>
+            <div class="particle p3"></div>
+            <div class="particle p4"></div>
+            <div class="particle p5"></div>
+            <div class="particle p6"></div>
 
-<!-- =====================================================
-     NAV
-===================================================== -->
-
-<header class="nav">
-
-    <div class="brand">
-
-        <div class="brand-icon">
-            🎮
         </div>
-
-        <span>
-            CRACKER
-        </span>
 
     </div>
 
 
-    <div class="nav-status">
+    <!-- ====================================================
+         PAGE
+    ===================================================== -->
 
-        <span class="nav-dot"></span>
+    <main class="page">
 
-        SYSTEM ONLINE
-
-    </div>
-
-</header>
+        <div class="container">
 
 
-<!-- =====================================================
-     HERO
-===================================================== -->
+            <!-- BRAND -->
 
-<main class="hero">
+            <section class="brand">
+
+                <div class="crown">
+                    👑
+                </div>
+
+                <div class="mastermind">
+                    MASTERMIND
+                </div>
+
+                <div class="line"></div>
+
+                <div class="cracker">
+                    CRACKER GAMES
+                </div>
+
+                <div class="tagline">
+                    ⚡ Play. Compete. Have Fun.
+                </div>
+
+                <div class="status">
+
+                    <span class="status-dot"></span>
+
+                    BOT ONLINE
+
+                </div>
+
+            </section>
 
 
-    <div class="orb orb-one"></div>
+            <!-- ACTIONS -->
 
-    <div class="orb orb-two"></div>
+            <section class="actions">
 
+                <a
+                    class="button primary"
+                    href="/games"
+                >
+                    🎮 Open Games
+                </a>
 
-    <section class="hero-content">
+                <a
+                    class="button secondary"
+                    href="/health"
+                >
+                    🟢 Check Status
+                </a>
 
-
-        <div class="badge">
-
-            <span class="badge-icon">✦</span>
-
-            TELEGRAM GAMING HUB
-
-        </div>
-
-
-        <h1 class="title">
-
-            CRACKER<br>
-            GAMES
-
-        </h1>
+            </section>
 
 
-        <div class="developer">
+            <!-- GAMES -->
 
-            <span class="developer-line"></span>
+            <section class="games">
 
-            <span>
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🏎️
+                    </span>
+
+                    <span class="game-name">
+                        Car Racing
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🥊
+                    </span>
+
+                    <span class="game-name">
+                        Fighting Arena
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🚀
+                    </span>
+
+                    <span class="game-name">
+                        Space Shooter
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🏃
+                    </span>
+
+                    <span class="game-name">
+                        Endless Runner
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        ⚽
+                    </span>
+
+                    <span class="game-name">
+                        Penalty Shootout
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🏀
+                    </span>
+
+                    <span class="game-name">
+                        Basketball
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🏹
+                    </span>
+
+                    <span class="game-name">
+                        Archery
+                    </span>
+
+                </div>
+
+
+                <div class="game">
+
+                    <span class="game-icon">
+                        🎯
+                    </span>
+
+                    <span class="game-name">
+                        Target Shooter
+                    </span>
+
+                </div>
+
+
+            </section>
+
+
+            <!-- FOOTER -->
+
+            <footer class="footer">
+
                 Crafted by
-                <strong>MASTERMIND</strong>
-            </span>
+                <strong>
+                    MASTERMIND
+                </strong>
+                •
+                <strong>
+                    CRACKER GAMES
+                </strong>
 
-            <span class="developer-line right"></span>
+            </footer>
+
 
         </div>
 
-
-        <p class="description">
-
-            A premium collection of free
-            mini-games built for fast,
-            simple and fun gaming directly
-            inside Telegram.
-
-        </p>
-
-
-        <div class="status-card">
-
-            <span class="status-light"></span>
-
-            <span>
-                CRACKER GAMES SERVER
-                <strong>READY</strong>
-            </span>
-
-        </div>
-
-
-    </section>
-
-
-    <div class="footer">
-
-        MASTERMIND • CRACKER GAMES
-
-    </div>
-
-
-</main>
-
-
-<script>
-
-/* =====================================================
-   PARTICLE ENGINE
-===================================================== */
-
-const particleBox =
-    document.querySelector(".particles");
-
-
-for (let i = 0; i < 42; i++) {
-
-    const particle =
-        document.createElement("div");
-
-    particle.className =
-        "particle";
-
-    particle.style.left =
-        Math.random() * 100 + "%";
-
-    particle.style.animationDuration =
-        (10 + Math.random() * 18) + "s";
-
-    particle.style.animationDelay =
-        (Math.random() * 15) + "s";
-
-    particle.style.opacity =
-        0.25 + Math.random() * 0.75;
-
-    const size =
-        1 + Math.random() * 3;
-
-    particle.style.width =
-        size + "px";
-
-    particle.style.height =
-        size + "px";
-
-    particleBox.appendChild(
-        particle
-    );
-}
-
-
-/* =====================================================
-   MOUSE PARALLAX
-===================================================== */
-
-const hero =
-    document.querySelector(
-        ".hero-content"
-    );
-
-
-document.addEventListener(
-    "mousemove",
-    (event) => {
-
-        if (window.innerWidth < 800) {
-            return;
-        }
-
-        const x =
-            event.clientX /
-            window.innerWidth -
-            0.5;
-
-        const y =
-            event.clientY /
-            window.innerHeight -
-            0.5;
-
-        hero.style.transform =
-            `translate(
-                ${x * 8}px,
-                ${y * 8}px
-            )`;
-    }
-);
-
-
-/* =====================================================
-   RESET PARALLAX
-===================================================== */
-
-document.addEventListener(
-    "mouseleave",
-    () => {
-
-        hero.style.transform =
-            "translate(0, 0)";
-    }
-);
-
-</script>
+    </main>
 
 
 </body>
@@ -1386,13 +1234,19 @@ document.addEventListener(
 </html>
 """
 
+    return Response(
+        html,
+        status=HTTPStatus.OK,
+        mimetype="text/html",
+    )
 
-# =========================================================
-# TELEGRAM MINI APP
-# =========================================================
 
-@web_app.get("/games")
-def games_webapp():
+# ============================================================
+# MINI APP
+# ============================================================
+
+@app.route("/games")
+def games():
 
     return send_from_directory(
         WEBAPP_DIR,
@@ -1400,12 +1254,12 @@ def games_webapp():
     )
 
 
-# =========================================================
-# TELEGRAM MINI APP STATIC FILES
-# =========================================================
+# ============================================================
+# MINI APP STATIC FILES
+# ============================================================
 
-@web_app.get("/games/<path:filename>")
-def games_webapp_files(filename):
+@app.route("/games/<path:filename>")
+def games_static(filename):
 
     return send_from_directory(
         WEBAPP_DIR,
@@ -1413,37 +1267,51 @@ def games_webapp_files(filename):
     )
 
 
-# =========================================================
+# ============================================================
 # HEALTH CHECK
-# =========================================================
+# ============================================================
 
-@web_app.get("/health")
+@app.route("/health")
 def health():
 
-    return "OK", HTTPStatus.OK
+    return Response(
+        "CRACKER GAMES BOT IS ONLINE",
+        status=HTTPStatus.OK,
+        mimetype="text/plain",
+    )
 
 
-# =========================================================
+# ============================================================
 # TELEGRAM WEBHOOK
-# =========================================================
+# ============================================================
 
-@web_app.post("/telegram")
-async def telegram_webhook():
+@app.route(
+    "/telegram",
+    methods=["POST"],
+)
+def telegram_webhook():
 
     try:
 
         data = request.get_json(
             force=True,
-            silent=False,
+            silent=True,
         )
+
+        if not data:
+
+            return Response(
+                "Bad Request",
+                status=HTTPStatus.BAD_REQUEST,
+            )
 
         update = Update.de_json(
             data,
             telegram_app.bot,
         )
 
-        await telegram_app.update_queue.put(
-            update
+        telegram_app.update_queue.put_nowait(
+            update,
         )
 
         return Response(
@@ -1454,58 +1322,49 @@ async def telegram_webhook():
     except Exception:
 
         logger.exception(
-            "Error while receiving Telegram update."
+            "Error processing Telegram webhook"
         )
 
         return Response(
-            "ERROR",
+            "Internal Server Error",
             status=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
 
-# =========================================================
+# ============================================================
 # MAIN
-# =========================================================
+# ============================================================
 
 async def main():
 
-    webhook_url = (
-        f"{WEBHOOK_URL}/telegram"
+    logger.info(
+        "Starting CRACKER GAMES..."
     )
-
 
     logger.info(
-        "Setting Telegram webhook: %s",
-        webhook_url,
+        "Landing URL: %s",
+        LANDING_URL,
+    )
+
+    logger.info(
+        "Games URL: %s",
+        GAMES_URL,
+    )
+
+    logger.info(
+        "Health URL: %s",
+        HEALTH_URL,
+    )
+
+    logger.info(
+        "Telegram webhook: %s",
+        TELEGRAM_WEBHOOK_URL,
     )
 
 
-    # =====================================================
-    # SET WEBHOOK
-    # =====================================================
-
-    await telegram_app.bot.set_webhook(
-
-        url=webhook_url,
-
-        allowed_updates=Update.ALL_TYPES,
-
-        drop_pending_updates=True,
-    )
-
-
-    # =====================================================
-    # TELEGRAM MENU COMMANDS
-    # =====================================================
-    #
-    # Telegram will show:
-    #
-    # ☰ Menu
-    #
-    # 🚀 On Bot
-    # 🎮 Games
-    #
-    # =====================================================
+    # ========================================================
+    # TELEGRAM COMMAND MENU
+    # ========================================================
 
     await telegram_app.bot.set_my_commands(
         [
@@ -1513,6 +1372,7 @@ async def main():
                 "onbot",
                 "🚀 On Bot",
             ),
+
             BotCommand(
                 "games",
                 "🎮 Games",
@@ -1521,84 +1381,95 @@ async def main():
     )
 
 
-    # =====================================================
-    # TELEGRAM MENU BUTTON
-    # =====================================================
-    #
-    # Instead of opening Games directly,
-    # Telegram Menu now opens the command list.
-    #
-    # =====================================================
+    # ========================================================
+    # MENU BUTTON
+    # ========================================================
 
     await telegram_app.bot.set_chat_menu_button(
-
         menu_button=MenuButtonCommands()
-
     )
 
 
-    logger.info(
-        "☰ Telegram Menu configured."
+    # ========================================================
+    # WEBHOOK
+    # ========================================================
+
+    await telegram_app.bot.set_webhook(
+        url=TELEGRAM_WEBHOOK_URL,
+
+        allowed_updates=Update.ALL_TYPES,
+
+        drop_pending_updates=True,
     )
 
-    logger.info(
-        "🚀 On Bot command configured."
-    )
 
-    logger.info(
-        "🎮 Games command configured."
-    )
-
-
-    # =====================================================
+    # ========================================================
     # ASGI
-    # =====================================================
+    # ========================================================
 
     asgi_app = WsgiToAsgi(
-        web_app
+        app
     )
 
 
-    # =====================================================
+    # ========================================================
     # UVICORN
-    # =====================================================
+    # ========================================================
+
+    config = uvicorn.Config(
+        asgi_app,
+
+        host="0.0.0.0",
+
+        port=PORT,
+
+        log_level="info",
+    )
 
     server = uvicorn.Server(
-
-        uvicorn.Config(
-
-            asgi_app,
-
-            host="0.0.0.0",
-
-            port=PORT,
-
-            log_level="info",
-        )
+        config
     )
 
 
-    # =====================================================
+    # ========================================================
     # START
-    # =====================================================
+    # ========================================================
 
     async with telegram_app:
 
         await telegram_app.start()
 
         logger.info(
-            "🎮 CRACKER GAMES — MASTERMIND is running!"
+            "Telegram application started."
         )
 
-        await server.serve()
+        try:
 
-        await telegram_app.stop()
+            await server.serve()
+
+        finally:
+
+            logger.info(
+                "Stopping Telegram application..."
+            )
+
+            await telegram_app.stop()
 
 
-# =========================================================
+# ============================================================
 # ENTRY POINT
-# =========================================================
+# ============================================================
 
 if __name__ == "__main__":
 
-    asyncio.run(main())
+    try:
+
+        asyncio.run(
+            main()
+        )
+
+    except KeyboardInterrupt:
+
+        logger.info(
+            "CRACKER GAMES stopped."
+        )

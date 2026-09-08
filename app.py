@@ -10,8 +10,8 @@ import uvicorn
 
 from telegram import (
     Update,
-    MenuButtonWebApp,
-    WebAppInfo,
+    BotCommand,
+    MenuButtonCommands,
 )
 
 from telegram.ext import (
@@ -89,6 +89,21 @@ telegram_app = (
 
 
 # =========================================================
+# ON BOT COMMAND
+# =========================================================
+
+async def on_bot_command(update: Update, context):
+
+    if not update.effective_message:
+        return
+
+    await update.effective_message.reply_text(
+        "🟢 CRACKER GAMES BOT IS ONLINE!\n\n"
+        "🎮 Games খুলতে নিচের Menu ব্যবহার করো।"
+    )
+
+
+# =========================================================
 # TELEGRAM HANDLERS
 # =========================================================
 
@@ -103,6 +118,13 @@ telegram_app.add_handler(
     CommandHandler(
         "games",
         games_command,
+    )
+)
+
+telegram_app.add_handler(
+    CommandHandler(
+        "onbot",
+        on_bot_command,
     )
 )
 
@@ -1473,36 +1495,58 @@ async def main():
 
 
     # =====================================================
-    # TELEGRAM MINI APP MENU BUTTON
+    # TELEGRAM MENU COMMANDS
     # =====================================================
     #
-    # Telegram Menu Button:
+    # Telegram will show:
     #
+    # ☰ Menu
+    #
+    # 🚀 On Bot
     # 🎮 Games
     #
-    # Clicking it opens:
+    # =====================================================
+
+    await telegram_app.bot.set_my_commands(
+        [
+            BotCommand(
+                "onbot",
+                "🚀 On Bot",
+            ),
+            BotCommand(
+                "games",
+                "🎮 Games",
+            ),
+        ]
+    )
+
+
+    # =====================================================
+    # TELEGRAM MENU BUTTON
+    # =====================================================
     #
-    # https://YOUR-DOMAIN/games
+    # Instead of opening Games directly,
+    # Telegram Menu now opens the command list.
     #
     # =====================================================
 
     await telegram_app.bot.set_chat_menu_button(
 
-        menu_button=MenuButtonWebApp(
+        menu_button=MenuButtonCommands()
 
-            text="🎮 Games",
-
-            web_app=WebAppInfo(
-
-                url=f"{WEBHOOK_URL}/games"
-
-            ),
-        )
     )
 
 
     logger.info(
-        "🎮 Games Mini App menu button configured."
+        "☰ Telegram Menu configured."
+    )
+
+    logger.info(
+        "🚀 On Bot command configured."
+    )
+
+    logger.info(
+        "🎮 Games command configured."
     )
 
 

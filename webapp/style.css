@@ -1,0 +1,886 @@
+/* =========================================================
+   CRACKER GAMES - TELEGRAM MINI APP
+   style.css
+   ========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --bg: #080d1c;
+    --bg-secondary: #10172b;
+    --card: #151d35;
+    --card-hover: #1b2644;
+    --text: #ffffff;
+    --muted: #8f9ab5;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #6c63ff;
+    --accent-light: #8c85ff;
+    --success: #27d17f;
+    --danger: #ff5c70;
+    --warning: #ffb84d;
+    --shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+button {
+    font: inherit;
+    border: none;
+    outline: none;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+
+/* =========================================================
+   APP
+   ========================================================= */
+
+#app {
+    width: 100%;
+    max-width: 1000px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 16px;
+    position: relative;
+}
+
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
+
+.topbar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        135deg,
+        #6c63ff,
+        #8d55ff
+    );
+    font-size: 25px;
+    box-shadow:
+        0 8px 25px rgba(108, 99, 255, 0.35);
+}
+
+.brand h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+}
+
+.brand p {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 18px;
+    transition: 0.2s ease;
+}
+
+.icon-btn:hover {
+    color: var(--text);
+    background: var(--card-hover);
+}
+
+
+/* =========================================================
+   PLAYER CARD
+   ========================================================= */
+
+.player-card {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 25px;
+    border-radius: 18px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(108, 99, 255, 0.15),
+            rgba(108, 99, 255, 0.03)
+        ),
+        var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.player-avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #242e4d;
+    font-size: 23px;
+}
+
+.player-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.small-label {
+    display: block;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+}
+
+.player-info strong {
+    display: block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.player-score {
+    text-align: right;
+}
+
+.player-score strong {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   SECTION TITLE
+   ========================================================= */
+
+.section-title {
+    margin-bottom: 15px;
+}
+
+.section-title h2 {
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.section-title p {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   GAMES GRID
+   ========================================================= */
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+
+/* =========================================================
+   GAME CARD
+   ========================================================= */
+
+.game-card {
+    min-height: 120px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+    padding: 15px;
+    overflow: hidden;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.game-card::before {
+    content: "";
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    right: -35px;
+    top: -35px;
+    border-radius: 50%;
+    background: rgba(108, 99, 255, 0.08);
+}
+
+.game-card:hover {
+    background: var(--card-hover);
+    border-color: rgba(255, 255, 255, 0.13);
+}
+
+.game-icon {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 27px;
+    z-index: 1;
+}
+
+.game-content {
+    min-width: 0;
+    padding-right: 12px;
+    z-index: 1;
+}
+
+.game-content h3 {
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.game-content p {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.35;
+}
+
+.play-arrow {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 23px;
+    z-index: 2;
+}
+
+
+/* =========================================================
+   GAME CARD VARIANTS
+   ========================================================= */
+
+.racing-card .game-icon {
+    background: rgba(255, 78, 100, 0.12);
+}
+
+.fighting-card .game-icon {
+    background: rgba(255, 154, 70, 0.12);
+}
+
+.space-card .game-icon {
+    background: rgba(88, 145, 255, 0.13);
+}
+
+.runner-card .game-icon {
+    background: rgba(45, 210, 130, 0.12);
+}
+
+.football-card .game-icon {
+    background: rgba(70, 205, 145, 0.12);
+}
+
+.basketball-card .game-icon {
+    background: rgba(255, 145, 60, 0.12);
+}
+
+.archery-card .game-icon {
+    background: rgba(180, 110, 255, 0.12);
+}
+
+.target-card .game-icon {
+    background: rgba(255, 75, 110, 0.12);
+}
+
+
+/* =========================================================
+   INFO BOX
+   ========================================================= */
+
+.info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 15px;
+    border-radius: 16px;
+    background: rgba(39, 209, 127, 0.06);
+    border: 1px solid rgba(39, 209, 127, 0.12);
+}
+
+.info-icon {
+    font-size: 20px;
+}
+
+.info-box strong {
+    font-size: 12px;
+}
+
+.info-box p {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   GAME SCREEN
+   ========================================================= */
+
+.game-screen {
+    width: 100%;
+}
+
+.game-screen.hidden {
+    display: none;
+}
+
+.game-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.back-btn {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 13px;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 21px;
+}
+
+.current-game-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.current-game-title span {
+    font-size: 20px;
+}
+
+.current-game-title strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+}
+
+.game-score-display {
+    text-align: right;
+}
+
+.game-score-display span {
+    display: block;
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.game-score-display strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 19px;
+}
+
+
+/* =========================================================
+   GAME CONTAINER
+   ========================================================= */
+
+.game-container {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #050914;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 300px;
+    max-height: 70vh;
+    background: #050914;
+    touch-action: none;
+}
+
+
+/* =========================================================
+   GAME OVERLAY
+   ========================================================= */
+
+.game-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(5, 9, 20, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10;
+}
+
+.game-overlay.hidden {
+    display: none;
+}
+
+.overlay-card {
+    width: min(90%, 360px);
+    padding: 28px 22px;
+    text-align: center;
+    border-radius: 22px;
+    background: rgba(21, 29, 53, 0.96);
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.overlay-icon {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 21px;
+    background: rgba(108, 99, 255, 0.12);
+    font-size: 36px;
+}
+
+.overlay-card h2 {
+    font-size: 23px;
+    font-weight: 800;
+}
+
+.overlay-card p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.final-score {
+    margin-top: 8px;
+    font-size: 48px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.best-score-text {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.best-score-text span {
+    color: var(--text);
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.primary-btn,
+.secondary-btn {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 18px;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 800;
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.primary-btn {
+    color: white;
+    background: linear-gradient(
+        135deg,
+        var(--accent),
+        #8c55ff
+    );
+    box-shadow:
+        0 10px 25px rgba(108, 99, 255, 0.28);
+}
+
+.secondary-btn {
+    margin-top: 10px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--border);
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+    opacity: 0.92;
+}
+
+.overlay-buttons {
+    margin-top: 4px;
+}
+
+
+/* =========================================================
+   GAME CONTROLS
+   ========================================================= */
+
+.game-controls {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.control-btn {
+    min-width: 58px;
+    min-height: 48px;
+    padding: 10px 16px;
+    border-radius: 15px;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 18px;
+    font-weight: 800;
+    touch-action: manipulation;
+}
+
+.control-btn.large {
+    min-width: 100px;
+}
+
+.control-btn.active,
+.control-btn:active {
+    background: var(--accent);
+}
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 25px;
+    z-index: 100;
+    max-width: calc(100% - 40px);
+    padding: 11px 17px;
+    transform: translateX(-50%);
+    border-radius: 13px;
+    color: white;
+    background: rgba(20, 27, 48, 0.95);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.toast.hidden {
+    display: none;
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    z-index: 999;
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.12);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#homeScreen {
+    animation: fadeIn 0.3s ease;
+}
+
+.game-screen {
+    animation: fadeIn 0.25s ease;
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 700px) {
+
+    #app {
+        padding: 24px;
+    }
+
+    .games-grid {
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+    }
+
+    .game-card {
+        min-height: 150px;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 18px;
+    }
+
+    .game-icon {
+        width: 58px;
+        height: 58px;
+        font-size: 30px;
+    }
+
+    .game-content {
+        padding-right: 0;
+    }
+
+    .game-content h3 {
+        font-size: 15px;
+    }
+
+    .game-content p {
+        font-size: 11px;
+    }
+
+    .play-arrow {
+        right: 13px;
+        bottom: 10px;
+    }
+
+    #gameCanvas {
+        max-height: 72vh;
+    }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+    #app {
+        padding: 12px;
+    }
+
+    .brand h1 {
+        font-size: 18px;
+    }
+
+    .brand-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+    }
+
+    .games-grid {
+        gap: 9px;
+    }
+
+    .game-card {
+        min-height: 112px;
+        padding: 12px;
+        gap: 9px;
+    }
+
+    .game-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 14px;
+        font-size: 23px;
+    }
+
+    .game-content h3 {
+        font-size: 12px;
+    }
+
+    .game-content p {
+        font-size: 9px;
+    }
+
+    .player-card {
+        padding: 12px;
+    }
+
+    .player-avatar {
+        width: 43px;
+        height: 43px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 340px) {
+
+    .games-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .game-card {
+        min-height: 90px;
+    }
+}
+
+
+/* =========================================================
+   LANDSCAPE PHONES
+   ========================================================= */
+
+@media (orientation: landscape) and (max-height: 550px) {
+
+    #app {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .topbar {
+        margin-bottom: 10px;
+    }
+
+    .player-card {
+        margin-bottom: 12px;
+    }
+
+    #gameCanvas {
+        max-height: 78vh;
+    }
+}
+
+
+/* =========================================================
+   SAFE AREA - TELEGRAM / MOBILE
+   ========================================================= */
+
+@supports (padding: env(safe-area-inset-bottom)) {
+
+    #app {
+        padding-bottom:
+            calc(16px + env(safe-area-inset-bottom));
+    }
+}

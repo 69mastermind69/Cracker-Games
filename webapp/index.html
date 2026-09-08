@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta name="theme-color" content="#0b1020">
+
+    <title>Cracker Games</title>
+
+    <link rel="stylesheet" href="/games/style.css">
+</head>
+
+<body>
+
+    <!-- Telegram Mini App -->
+    <div id="app">
+
+        <!-- Header -->
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon">🎮</div>
+
+                <div>
+                    <h1>Cracker Games</h1>
+                    <p>Play • Challenge • Win</p>
+                </div>
+            </div>
+
+            <button
+                id="closeAppBtn"
+                class="icon-btn"
+                type="button"
+                aria-label="Close"
+            >
+                ✕
+            </button>
+        </header>
+
+
+        <!-- Player -->
+        <section class="player-card">
+
+            <div class="player-avatar" id="playerAvatar">
+                🎮
+            </div>
+
+            <div class="player-info">
+                <span class="small-label">PLAYER</span>
+                <strong id="playerName">Guest Player</strong>
+            </div>
+
+            <div class="player-score">
+                <span class="small-label">BEST</span>
+                <strong id="bestScore">0</strong>
+            </div>
+
+        </section>
+
+
+        <!-- Main Menu -->
+        <main id="homeScreen">
+
+            <div class="section-title">
+                <div>
+                    <h2>🔥 Games</h2>
+                    <p>Choose a game and start playing</p>
+                </div>
+            </div>
+
+
+            <!-- Game Grid -->
+            <section class="games-grid">
+
+                <!-- Car Racing -->
+                <button
+                    class="game-card racing-card"
+                    type="button"
+                    data-game="racing"
+                >
+                    <div class="game-icon">🏎️</div>
+
+                    <div class="game-content">
+                        <h3>Car Racing</h3>
+                        <p>Drive fast & dodge traffic</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Fighting -->
+                <button
+                    class="game-card fighting-card"
+                    type="button"
+                    data-game="fighting"
+                >
+                    <div class="game-icon">🥊</div>
+
+                    <div class="game-content">
+                        <h3>Fighting Arena</h3>
+                        <p>Fight your opponent</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Space Shooter -->
+                <button
+                    class="game-card space-card"
+                    type="button"
+                    data-game="space"
+                >
+                    <div class="game-icon">🚀</div>
+
+                    <div class="game-content">
+                        <h3>Space Shooter</h3>
+                        <p>Destroy incoming enemies</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Endless Runner -->
+                <button
+                    class="game-card runner-card"
+                    type="button"
+                    data-game="runner"
+                >
+                    <div class="game-icon">🏃</div>
+
+                    <div class="game-content">
+                        <h3>Endless Runner</h3>
+                        <p>Run & jump over obstacles</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Penalty -->
+                <button
+                    class="game-card football-card"
+                    type="button"
+                    data-game="penalty"
+                >
+                    <div class="game-icon">⚽</div>
+
+                    <div class="game-content">
+                        <h3>Penalty Shootout</h3>
+                        <p>Score as many goals as possible</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Basketball -->
+                <button
+                    class="game-card basketball-card"
+                    type="button"
+                    data-game="basketball"
+                >
+                    <div class="game-icon">🏀</div>
+
+                    <div class="game-content">
+                        <h3>Basketball</h3>
+                        <p>Time your perfect shots</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Archery -->
+                <button
+                    class="game-card archery-card"
+                    type="button"
+                    data-game="archery"
+                >
+                    <div class="game-icon">🏹</div>
+
+                    <div class="game-content">
+                        <h3>Archery</h3>
+                        <p>Hit the moving targets</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+
+                <!-- Target Shooter -->
+                <button
+                    class="game-card target-card"
+                    type="button"
+                    data-game="target"
+                >
+                    <div class="game-icon">🎯</div>
+
+                    <div class="game-content">
+                        <h3>Target Shooter</h3>
+                        <p>Test your aim & reaction</p>
+                    </div>
+
+                    <span class="play-arrow">›</span>
+                </button>
+
+            </section>
+
+
+            <!-- Info -->
+            <section class="info-box">
+
+                <span class="info-icon">⚡</span>
+
+                <div>
+                    <strong>Real-time gameplay</strong>
+                    <p>
+                        These games run directly inside Telegram
+                        for a smooth gaming experience.
+                    </p>
+                </div>
+
+            </section>
+
+        </main>
+
+
+        <!-- Game Screen -->
+        <section
+            id="gameScreen"
+            class="game-screen hidden"
+        >
+
+            <!-- Game Header -->
+            <div class="game-header">
+
+                <button
+                    id="backBtn"
+                    class="back-btn"
+                    type="button"
+                >
+                    ←
+                </button>
+
+                <div class="current-game-title">
+                    <span id="currentGameIcon">🎮</span>
+                    <strong id="currentGameName">Game</strong>
+                </div>
+
+                <div class="game-score-display">
+                    <span>SCORE</span>
+                    <strong id="gameScore">0</strong>
+                </div>
+
+            </div>
+
+
+            <!-- Game Canvas -->
+            <div
+                id="gameContainer"
+                class="game-container"
+            >
+
+                <canvas
+                    id="gameCanvas"
+                    width="900"
+                    height="600"
+                ></canvas>
+
+
+                <!-- Start Overlay -->
+                <div
+                    id="startOverlay"
+                    class="game-overlay"
+                >
+
+                    <div class="overlay-card">
+
+                        <div
+                            id="overlayIcon"
+                            class="overlay-icon"
+                        >
+                            🎮
+                        </div>
+
+                        <h2 id="overlayTitle">
+                            Ready?
+                        </h2>
+
+                        <p id="overlayDescription">
+                            Press start to begin the game.
+                        </p>
+
+                        <button
+                            id="startGameBtn"
+                            class="primary-btn"
+                            type="button"
+                        >
+                            ▶ Start Game
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Game Over Overlay -->
+                <div
+                    id="gameOverOverlay"
+                    class="game-overlay hidden"
+                >
+
+                    <div class="overlay-card">
+
+                        <div class="overlay-icon">
+                            🏆
+                        </div>
+
+                        <h2>Game Over!</h2>
+
+                        <p>
+                            Your score
+                        </p>
+
+                        <div
+                            id="finalScore"
+                            class="final-score"
+                        >
+                            0
+                        </div>
+
+                        <div class="best-score-text">
+                            Best: <span id="finalBestScore">0</span>
+                        </div>
+
+                        <div class="overlay-buttons">
+
+                            <button
+                                id="restartGameBtn"
+                                class="primary-btn"
+                                type="button"
+                            >
+                                🔄 Play Again
+                            </button>
+
+                            <button
+                                id="menuGameBtn"
+                                class="secondary-btn"
+                                type="button"
+                            >
+                                🎮 Games Menu
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Controls -->
+            <div
+                id="gameControls"
+                class="game-controls"
+            >
+
+                <!-- Controls are generated by game.js -->
+
+            </div>
+
+        </section>
+
+
+        <!-- Toast -->
+        <div
+            id="toast"
+            class="toast hidden"
+        >
+            <span id="toastMessage"></span>
+        </div>
+
+    </div>
+
+
+    <!-- JavaScript -->
+    <script src="/games/game.js"></script>
+
+</body>
+</html>

@@ -1,7 +1,11 @@
 
 # bot/callbacks.py
 
-from telegram import Update
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from telegram.ext import ContextTypes
 
 from bot.handlers import games_menu
@@ -21,6 +25,38 @@ async def show_games_menu(query):
 
 
 # ============================================================
+# DEVELOPER MENU
+# ============================================================
+
+async def show_developer(query):
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "📱 Telegram",
+                url="https://t.me/Do_x_Die",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "🔙 Back to Games",
+                callback_data="menu:games",
+            ),
+        ],
+    ]
+
+    await query.edit_message_text(
+        "👨‍💻 *Developer*\n\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "👤 *Name:* MASTERMIND\n"
+        "📱 *Telegram:* @Do_x_Die\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        "🎮 Cracker Games Developer",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
+
+# ============================================================
 # MAIN CALLBACK ROUTER
 # ============================================================
 
@@ -35,7 +71,10 @@ async def button_callback(
 
     data = query.data or ""
 
-    # Answer callback once
+    # --------------------------------------------------------
+    # Answer callback
+    # --------------------------------------------------------
+
     await query.answer()
 
     # ========================================================
@@ -44,6 +83,15 @@ async def button_callback(
 
     if data == "menu:games":
         await show_games_menu(query)
+        return
+
+
+    # ========================================================
+    # DEVELOPER
+    # ========================================================
+
+    if data == "developer":
+        await show_developer(query)
         return
 
 
@@ -89,10 +137,6 @@ async def button_callback(
     # ========================================================
     # NUMBER GUESS
     # ========================================================
-
-    # IMPORTANT:
-    # File = number_guess.py
-    # Function = start_number_guess()
 
     if data == "game:number":
         from bot.games.number_guess import start_number_guess
@@ -165,12 +209,8 @@ async def button_callback(
 
 
     # ========================================================
-    # TIC TAC TOE
+    # TIC-TAC-TOE
     # ========================================================
-
-    # IMPORTANT:
-    # File = tictactoe.py
-    # Function = start_tictactoe()
 
     if data == "game:ttt":
         from bot.games.tictactoe import start_tictactoe
@@ -239,10 +279,6 @@ async def button_callback(
     # ========================================================
     # HIGHER / LOWER
     # ========================================================
-
-    # IMPORTANT:
-    # File = higher_lower.py
-    # Function = start_higher_lower()
 
     if data == "game:higher":
         from bot.games.higher_lower import start_higher_lower

@@ -4,7 +4,7 @@ import logging
 from http import HTTPStatus
 
 from asgiref.wsgi import WsgiToAsgi
-from flask import Flask, request, Response
+from flask import Flask, request, Response, send_from_directory
 
 import uvicorn
 
@@ -63,6 +63,20 @@ web_app = Flask(__name__)
 
 
 # =========================================================
+# WEBAPP DIRECTORY
+# =========================================================
+
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+WEBAPP_DIR = os.path.join(
+    BASE_DIR,
+    "webapp",
+)
+
+
+# =========================================================
 # TELEGRAM APPLICATION
 # =========================================================
 
@@ -81,20 +95,20 @@ telegram_app = (
 telegram_app.add_handler(
     CommandHandler(
         "start",
-        start_command
+        start_command,
     )
 )
 
 telegram_app.add_handler(
     CommandHandler(
         "games",
-        games_command
+        games_command,
     )
 )
 
 telegram_app.add_handler(
     CallbackQueryHandler(
-        button_callback
+        button_callback,
     )
 )
 
@@ -620,7 +634,9 @@ body::before {
 
     animation:
         badgeFloat
-        4s ease-in-out infinite;
+        4s
+        ease-in-out
+        infinite;
 }
 
 
@@ -1350,6 +1366,32 @@ document.addEventListener(
 
 
 # =========================================================
+# TELEGRAM MINI APP
+# =========================================================
+
+@web_app.get("/games")
+def games_webapp():
+
+    return send_from_directory(
+        WEBAPP_DIR,
+        "index.html",
+    )
+
+
+# =========================================================
+# TELEGRAM MINI APP STATIC FILES
+# =========================================================
+
+@web_app.get("/games/<path:filename>")
+def games_webapp_files(filename):
+
+    return send_from_directory(
+        WEBAPP_DIR,
+        filename,
+    )
+
+
+# =========================================================
 # HEALTH CHECK
 # =========================================================
 
@@ -1370,12 +1412,12 @@ async def telegram_webhook():
 
         data = request.get_json(
             force=True,
-            silent=False
+            silent=False,
         )
 
         update = Update.de_json(
             data,
-            telegram_app.bot
+            telegram_app.bot,
         )
 
         await telegram_app.update_queue.put(
@@ -1384,7 +1426,7 @@ async def telegram_webhook():
 
         return Response(
             "OK",
-            status=HTTPStatus.OK
+            status=HTTPStatus.OK,
         )
 
     except Exception:
@@ -1395,7 +1437,7 @@ async def telegram_webhook():
 
         return Response(
             "ERROR",
-            status=HTTPStatus.INTERNAL_SERVER_ERROR
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
 
@@ -1412,7 +1454,7 @@ async def main():
 
     logger.info(
         "Setting Telegram webhook: %s",
-        webhook_url
+        webhook_url,
     )
 
 
@@ -1426,19 +1468,21 @@ async def main():
 
         allowed_updates=Update.ALL_TYPES,
 
-        drop_pending_updates=True
+        drop_pending_updates=True,
     )
 
 
     # =====================================================
-    # TELEGRAM MENU BUTTON
+    # TELEGRAM MINI APP MENU BUTTON
     # =====================================================
     #
-    # Telegram Menu button:
+    # Telegram Menu Button:
     #
-    # 🚀 Open Bot
+    # 🎮 Games
     #
-    # Clicking it opens the Render homepage.
+    # Clicking it opens:
+    #
+    # https://YOUR-DOMAIN/games
     #
     # =====================================================
 
@@ -1446,18 +1490,19 @@ async def main():
 
         menu_button=MenuButtonWebApp(
 
-            text="🚀 Open Bot",
+            text="🎮 Games",
 
             web_app=WebAppInfo(
 
-                url=WEBHOOK_URL
-            )
+                url=f"{WEBHOOK_URL}/games"
+
+            ),
         )
     )
 
 
     logger.info(
-        "🚀 Open Bot menu button configured."
+        "🎮 Games Mini App menu button configured."
     )
 
 
@@ -1484,7 +1529,7 @@ async def main():
 
             port=PORT,
 
-            log_level="info"
+            log_level="info",
         )
     )
 

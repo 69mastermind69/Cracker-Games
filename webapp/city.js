@@ -2,590 +2,1296 @@
 (() => {
     "use strict";
 
-    // =========================================================
-    // CRACKER CITY V3
-    // Original 2D Open-World Mini RPG
-    // No database / No permanent save
-    // =========================================================
+    /* =========================================================
+       CRACKER CITY V3
+       Original 2D open-world mini RPG
+       No database
+       No localStorage
+       No permanent saving
+       ========================================================= */
 
     const canvas = document.getElementById("cityCanvas");
+    const ctx = canvas.getContext("2d");
 
-    if (!canvas) {
-        console.error("Cracker City: #cityCanvas not found.");
+    if (!canvas || !ctx) {
+        console.error("Cracker City: canvas not found.");
         return;
     }
 
-    const ctx = canvas.getContext("2d");
-
-    // ---------------------------------------------------------
-    // Telegram Mini App
-    // ---------------------------------------------------------
-
-    const tg = window.Telegram?.WebApp;
-
-    if (tg) {
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor?.("#090b16");
-        tg.setBackgroundColor?.("#090b16");
-    }
-
-    // ---------------------------------------------------------
-    // HUD
-    // ---------------------------------------------------------
-
+    const missionEl = document.getElementById("mission");
     const cashEl = document.getElementById("cash");
     const repEl = document.getElementById("rep");
     const propertyEl = document.getElementById("property");
-    const missionEl = document.getElementById("mission");
 
     const panel = document.getElementById("panel");
     const panelTitle = document.getElementById("panelTitle");
     const panelText = document.getElementById("panelText");
     const panelButtons = document.getElementById("panelButtons");
-
     const actionBtn = document.getElementById("action");
 
-    // ---------------------------------------------------------
-    // WORLD
-    // ---------------------------------------------------------
+    /* =========================================================
+       CANVAS / WORLD
+       ========================================================= */
 
-    const WORLD = {
-        width: 3600,
-        height: 2400
-    };
+    const VIEW_W = 960;
+    const VIEW_H = 600;
 
-    const VIEW = {
-        width: canvas.width,
-        height: canvas.height
-    };
+    const WORLD_W = 3600;
+    const WORLD_H = 2400;
 
-    // ---------------------------------------------------------
-    // PLAYER
-    // ---------------------------------------------------------
+    canvas.width = VIEW_W;
+    canvas.height = VIEW_H;
 
-    const player = {
-        x: 1780,
-        y: 1190,
-
-        radius: 15,
-
-        walkSpeed: 3.2,
-        runSpeed: 5.2,
-
-        direction: "down",
-
-        health: 100,
-        energy: 100,
-
-        inVehicle: false,
-        vehicleId: null
-    };
-
-    // ---------------------------------------------------------
-    // GAME STATE
-    // ---------------------------------------------------------
+    /* =========================================================
+       GAME STATE
+       ========================================================= */
 
     const state = {
         cash: 500,
         bank: 0,
-
         rep: 0,
         xp: 0,
         level: 1,
 
         property: 0,
-
-        mission: null,
-        missionProgress: 0,
-
-        completedMissions: 0,
-
         carsOwned: 0,
 
-        dayTime: 8,
+        missionsCompleted: [],
+        activeMission: null,
 
+        dayTime: 9,
         weather: "clear",
 
         shopVisits: 0,
 
-        gameStarted: true
-    };
-
-    // ---------------------------------------------------------
-    // CAMERA
-    // ---------------------------------------------------------
-
-    const camera = {
-        x: 0,
-        y: 0
-    };
-
-    // ---------------------------------------------------------
-    // INPUT
-    // ---------------------------------------------------------
-
-    const keys = {};
-
-    let lastTime = performance.now();
-
-    // ---------------------------------------------------------
-    // DISTRICTS
-    // ---------------------------------------------------------
-
-    const districts = [
-        {
-            name: "Downtown",
-            x: 120,
-            y: 100,
-            w: 1050,
-            h: 650
-        },
-
-        {
-            name: "Neon District",
-            x: 1220,
-            y: 100,
-            w: 1050,
-            h: 650
-        },
-
-        {
-            name: "Old Town",
-            x: 2380,
-            y: 100,
-            w: 1050,
-            h: 650
-        },
-
-        {
-            name: "Suburbs",
-            x: 120,
-            y: 820,
-            w: 1050,
-            h: 620
-        },
-
-        {
-            name: "Central City",
-            x: 1220,
-            y: 820,
-            w: 1050,
-            h: 620
-        },
-
-        {
-            name: "Industrial Zone",
-            x: 2380,
-            y: 820,
-            w: 1050,
-            h: 620
-        },
-
-        {
-            name: "Harbor",
-            x: 120,
-            y: 1510,
-            w: 1050,
-            h: 760
-        },
-
-        {
-            name: "Beach",
-            x: 1220,
-            y: 1510,
-            w: 1050,
-            h: 760
-        },
-
-        {
-            name: "Airport",
-            x: 2380,
-            y: 1510,
-            w: 1050,
-            h: 760
-        }
-    ];
-
-    // ---------------------------------------------------------
-    // ROADS
-    // ---------------------------------------------------------
-
-    const roads = [
-        // horizontal
-        { x: 0, y: 720, w: WORLD.width, h: 100 },
-        { x: 0, y: 1430, w: WORLD.width, h: 100 },
-
-        // vertical
-        { x: 1120, y: 0, w: 100, h: WORLD.height },
-        { x: 2270, y: 0, w: 100, h: WORLD.height }
-    ];
-
-    // Extra smaller roads
-    for (let y = 250; y < WORLD.height; y += 430) {
-        roads.push({
+        camera: {
             x: 0,
-            y,
-            w: WORLD.width,
-            h: 52
-        });
-    }
-
-    for (let x = 300; x < WORLD.width; x += 560) {
-        roads.push({
-            x,
-            y: 0,
-            w: 52,
-            h: WORLD.height
-        });
-    }
-
-    // ---------------------------------------------------------
-    // BUILDINGS
-    // ---------------------------------------------------------
-
-    const buildings = [];
-
-    function addBuilding(x, y, w, h, name, type = "building") {
-        buildings.push({
-            x,
-            y,
-            w,
-            h,
-            name,
-            type
-        });
-    }
-
-    // Downtown
-    addBuilding(150, 150, 260, 220, "City Apartments");
-    addBuilding(470, 140, 280, 260, "Grand Hotel");
-    addBuilding(800, 160, 240, 220, "City Mall");
-
-    addBuilding(160, 430, 260, 220, "Downtown Office");
-    addBuilding(480, 450, 250, 190, "City Bank");
-    addBuilding(800, 450, 240, 200, "Arcade Center");
-
-    // Neon District
-    addBuilding(1280, 150, 270, 230, "Neon Club");
-    addBuilding(1600, 130, 290, 250, "Luxury Hotel");
-    addBuilding(1950, 150, 250, 230, "Music Hall");
-
-    addBuilding(1280, 450, 260, 200, "Night Market");
-    addBuilding(1600, 450, 300, 200, "Fashion Store");
-    addBuilding(1960, 450, 240, 200, "Cinema");
-
-    // Old Town
-    addBuilding(2450, 150, 280, 230, "Old Apartments");
-    addBuilding(2780, 130, 270, 250, "Museum");
-    addBuilding(3100, 160, 260, 220, "Town Hall");
-
-    addBuilding(2450, 450, 280, 190, "Cafe");
-    addBuilding(2780, 450, 260, 200, "Book Shop");
-    addBuilding(3100, 450, 260, 190, "Old Hotel");
-
-    // Suburbs
-    addBuilding(150, 880, 250, 190, "Family House");
-    addBuilding(470, 860, 270, 200, "Green Apartments");
-    addBuilding(820, 900, 240, 180, "Corner Store");
-
-    addBuilding(150, 1160, 280, 180, "Suburban Home");
-    addBuilding(500, 1150, 250, 190, "Community Center");
-    addBuilding(820, 1160, 250, 180, "Mini Market");
-
-    // Central
-    addBuilding(1280, 870, 270, 220, "Central Hotel");
-    addBuilding(1600, 860, 290, 230, "Business Tower");
-    addBuilding(1950, 880, 250, 200, "Restaurant");
-
-    addBuilding(1280, 1160, 260, 190, "Police Station");
-    addBuilding(1600, 1150, 300, 200, "Hospital");
-    addBuilding(1960, 1160, 240, 190, "Sports Center");
-
-    // Industrial
-    addBuilding(2450, 880, 300, 210, "Factory A");
-    addBuilding(2800, 860, 300, 240, "Factory B");
-    addBuilding(3150, 880, 210, 200, "Warehouse");
-
-    addBuilding(2450, 1160, 300, 190, "Auto Workshop");
-    addBuilding(2800, 1160, 280, 200, "Storage Depot");
-    addBuilding(3130, 1160, 230, 190, "Power Station");
-
-    // Harbor
-    addBuilding(150, 1580, 280, 220, "Harbor Office");
-    addBuilding(480, 1600, 300, 200, "Cargo Warehouse");
-    addBuilding(830, 1580, 250, 220, "Fish Market");
-
-    addBuilding(150, 1880, 300, 230, "Port Hotel");
-    addBuilding(500, 1880, 280, 220, "Boat Club");
-    addBuilding(820, 1880, 260, 230, "Harbor Cafe");
-
-    // Beach
-    addBuilding(1280, 1580, 270, 210, "Beach Hotel");
-    addBuilding(1600, 1580, 300, 210, "Sunset Resort");
-    addBuilding(1960, 1580, 230, 200, "Beach Shop");
-
-    addBuilding(1280, 1880, 250, 190, "Surf Club");
-    addBuilding(1600, 1870, 280, 210, "Beach Restaurant");
-    addBuilding(1940, 1880, 250, 190, "Ice Cream Shop");
-
-    // Airport
-    addBuilding(2450, 1580, 320, 220, "Airport Terminal");
-    addBuilding(2830, 1580, 250, 200, "Airport Hotel");
-    addBuilding(3140, 1580, 220, 200, "Travel Office");
-
-    addBuilding(2450, 1880, 280, 200, "Hangar");
-    addBuilding(2800, 1880, 280, 200, "Airport Garage");
-    addBuilding(3150, 1880, 210, 200, "Control Center");
-
-    // ---------------------------------------------------------
-    // LANDMARKS
-    // ---------------------------------------------------------
-
-    const landmarks = [
-        {
-            x: 600,
-            y: 760,
-            name: "Downtown Plaza",
-            icon: "🏙️"
+            y: 0
         },
 
-        {
-            x: 1750,
-            y: 760,
-            name: "Neon Square",
-            icon: "✨"
-        },
+        paused: false,
+        panelOpen: false
+    };
 
-        {
-            x: 2920,
-            y: 760,
-            name: "Old Town Gate",
-            icon: "🏛️"
-        },
+    /* =========================================================
+       INPUT
+       ========================================================= */
 
-        {
-            x: 650,
-            y: 1470,
-            name: "Harbor Gate",
-            icon: "⚓"
-        },
+    const keys = Object.create(null);
 
-        {
-            x: 1750,
-            y: 1470,
-            name: "Beach Entrance",
-            icon: "🌴"
-        },
+    window.addEventListener("keydown", (e) => {
+        keys[e.key] = true;
 
-        {
-            x: 2920,
-            y: 1470,
-            name: "Airport Road",
-            icon: "✈️"
+        if (
+            e.key === "ArrowUp" ||
+            e.key === "ArrowDown" ||
+            e.key === "ArrowLeft" ||
+            e.key === "ArrowRight" ||
+            e.key === " "
+        ) {
+            e.preventDefault();
         }
-    ];
 
-    // ---------------------------------------------------------
-    // INTERACTION POINTS
-    // ---------------------------------------------------------
-
-    const points = [
-        {
-            id: "mission",
-            x: 1050,
-            y: 760,
-            label: "MISSION",
-            icon: "🎯"
-        },
-
-        {
-            id: "garage",
-            x: 2500,
-            y: 1120,
-            label: "GARAGE",
-            icon: "🚗"
-        },
-
-        {
-            id: "property",
-            x: 900,
-            y: 1240,
-            label: "PROPERTY",
-            icon: "🏠"
-        },
-
-        {
-            id: "shop",
-            x: 1740,
-            y: 560,
-            label: "SHOP",
-            icon: "🛍️"
-        },
-
-        {
-            id: "club",
-            x: 1410,
-            y: 260,
-            label: "CLUB",
-            icon: "🎵"
-        },
-
-        {
-            id: "bank",
-            x: 605,
-            y: 545,
-            label: "BANK",
-            icon: "🏦"
-        },
-
-        {
-            id: "airport",
-            x: 2700,
-            y: 1720,
-            label: "AIRPORT",
-            icon: "✈️"
+        if (e.key.toLowerCase() === "e") {
+            interact();
         }
-    ];
 
-    // ---------------------------------------------------------
-    // VEHICLES
-    // ---------------------------------------------------------
-
-    const vehicles = [
-        {
-            id: 1,
-            x: 1180,
-            y: 760,
-            color: "#e84d7d",
-            speed: 2.4,
-            angle: 0,
-            owned: false
-        },
-
-        {
-            id: 2,
-            x: 2300,
-            y: 1040,
-            color: "#35a7ff",
-            speed: 2.2,
-            angle: Math.PI / 2,
-            owned: false
-        },
-
-        {
-            id: 3,
-            x: 1540,
-            y: 1480,
-            color: "#ffb23e",
-            speed: 2.0,
-            angle: 0,
-            owned: false
-        },
-
-        {
-            id: 4,
-            x: 2910,
-            y: 1450,
-            color: "#62e69b",
-            speed: 2.3,
-            angle: Math.PI / 2,
-            owned: false
-        },
-
-        {
-            id: 5,
-            x: 360,
-            y: 1480,
-            color: "#b47cff",
-            speed: 2.1,
-            angle: 0,
-            owned: false
+        if (e.key === "Escape") {
+            closePanel();
         }
-    ];
+    });
 
-    // ---------------------------------------------------------
-    // NPC
-    // ---------------------------------------------------------
+    window.addEventListener("keyup", (e) => {
+        keys[e.key] = false;
+    });
 
-    const npcs = [];
+    /* =========================================================
+       MOBILE CONTROLS
+       ========================================================= */
 
-    const npcNames = [
-        "Alex",
-        "Sam",
-        "Jamie",
-        "Taylor",
-        "Jordan",
-        "Chris",
-        "Morgan",
-        "Riley",
-        "Casey",
-        "Avery",
-        "Drew",
-        "Robin",
-        "Sky",
-        "Cameron",
-        "Blake",
-        "Mason",
-        "Harper",
-        "Quinn"
-    ];
+    document.querySelectorAll("[data-key]").forEach((button) => {
+        const key = button.dataset.key;
 
-    for (let i = 0; i < 38; i++) {
-        npcs.push({
-            x: 200 + Math.random() * (WORLD.width - 400),
-            y: 200 + Math.random() * (WORLD.height - 400),
+        const start = (e) => {
+            e.preventDefault();
+            keys[key] = true;
+        };
 
-            speed: 0.35 + Math.random() * 0.65,
+        const stop = (e) => {
+            e.preventDefault();
+            keys[key] = false;
+        };
 
-            direction: Math.random() * Math.PI * 2,
+        button.addEventListener("pointerdown", start);
+        button.addEventListener("pointerup", stop);
+        button.addEventListener("pointercancel", stop);
+        button.addEventListener("pointerleave", stop);
+    });
 
-            changeTimer: Math.random() * 180,
-
-            name: npcNames[i % npcNames.length],
-
-            shirt: i % 2 === 0 ? "#35d6c2" : "#ff6cae"
+    if (actionBtn) {
+        actionBtn.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            interact();
         });
     }
 
-    // ---------------------------------------------------------
-    // COLLECTIBLES
-    // ---------------------------------------------------------
+    /* =========================================================
+       PLAYER
+       ========================================================= */
 
-    const collectibles = [];
+    /*
+       IMPORTANT:
+       Player starts on an open road area.
+       This prevents spawning inside buildings.
+    */
 
-    for (let i = 0; i < 25; i++) {
-        collectibles.push({
-            x: 150 + Math.random() * (WORLD.width - 300),
-            y: 150 + Math.random() * (WORLD.height - 300),
-            collected: false,
-            type: i % 3 === 0 ? "coin" : "star"
-        });
+    const player = {
+        x: 250,
+        y: 300,
+
+        width: 24,
+        height: 34,
+
+        speed: 2.8,
+        runSpeed: 4.4,
+
+        health: 100,
+        energy: 100,
+
+        inVehicle: false,
+        vehicle: null,
+
+        direction: "down",
+
+        walkFrame: 0
+    };
+
+    /* =========================================================
+       HELPERS
+       ========================================================= */
+
+    function rect(x, y, w, h) {
+        return { x, y, w, h };
     }
-
-    // ---------------------------------------------------------
-    // HELPERS
-    // ---------------------------------------------------------
 
     function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
     }
 
     function distance(a, b) {
-        return Math.hypot(a.x - b.x, a.y - b.y);
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+
+        return Math.sqrt(dx * dx + dy * dy);
     }
+
+    function centerOf(r) {
+        return {
+            x: r.x + r.w / 2,
+            y: r.y + r.h / 2
+        };
+    }
+
+    function random(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function randomInt(min, max) {
+        return Math.floor(random(min, max + 1));
+    }
+
+    /* =========================================================
+       ROADS
+       ========================================================= */
+
+    const roads = [];
+
+    function addRoad(x, y, w, h, type = "road") {
+        roads.push({
+            x,
+            y,
+            w,
+            h,
+            type
+        });
+    }
+
+    /*
+       Main horizontal roads
+    */
+
+    addRoad(0, 250, WORLD_W, 130);
+    addRoad(0, 760, WORLD_W, 130);
+    addRoad(0, 1270, WORLD_W, 130);
+    addRoad(0, 1780, WORLD_W, 130);
+
+    /*
+       Main vertical roads
+    */
+
+    addRoad(250, 0, 130, WORLD_H);
+    addRoad(850, 0, 130, WORLD_H);
+    addRoad(1450, 0, 130, WORLD_H);
+    addRoad(2050, 0, 130, WORLD_H);
+    addRoad(2650, 0, 130, WORLD_H);
+    addRoad(3250, 0, 130, WORLD_H);
+
+    /* Side streets */
+
+    addRoad(530, 0, 70, WORLD_H, "small");
+    addRoad(1150, 0, 70, WORLD_H, "small");
+    addRoad(1750, 0, 70, WORLD_H, "small");
+    addRoad(2350, 0, 70, WORLD_H, "small");
+    addRoad(2950, 0, 70, WORLD_H, "small");
+
+    addRoad(0, 520, WORLD_W, 70, "small");
+    addRoad(0, 1030, WORLD_W, 70, "small");
+    addRoad(0, 1540, WORLD_W, 70, "small");
+    addRoad(0, 2050, WORLD_W, 70, "small");
+
+    /* =========================================================
+       BUILDINGS
+       ========================================================= */
+
+    const buildings = [];
+
+    function addBuilding(x, y, w, h, name = "Building", district = "") {
+        buildings.push({
+            x,
+            y,
+            w,
+            h,
+            name,
+            district
+        });
+    }
+
+    /*
+       Helper:
+       only add buildings if they don't overlap roads.
+    */
+
+    function safeAddBuilding(x, y, w, h, name, district) {
+        const r = rect(x, y, w, h);
+
+        const hitsRoad = roads.some((road) => {
+            return rectanglesOverlap(
+                r,
+                road,
+                6
+            );
+        });
+
+        if (!hitsRoad) {
+            addBuilding(x, y, w, h, name, district);
+        }
+    }
+
+    function rectanglesOverlap(a, b, padding = 0) {
+        return (
+            a.x - padding < b.x + b.w &&
+            a.x + a.w + padding > b.x &&
+            a.y - padding < b.y + b.h &&
+            a.y + a.h + padding > b.y
+        );
+    }
+
+    /*
+       Downtown
+    */
+
+    safeAddBuilding(30, 40, 170, 150, "Metro Tower", "Downtown");
+    safeAddBuilding(410, 50, 170, 150, "City Office", "Downtown");
+    safeAddBuilding(1010, 45, 180, 150, "Grand Hotel", "Downtown");
+    safeAddBuilding(1220, 45, 170, 150, "Business Center", "Downtown");
+
+    safeAddBuilding(40, 430, 180, 190, "Central Mall", "Downtown");
+    safeAddBuilding(410, 430, 180, 190, "Cinema", "Downtown");
+    safeAddBuilding(1010, 430, 180, 190, "Arcade Hall", "Downtown");
+    safeAddBuilding(1220, 430, 180, 190, "Cafe Block", "Downtown");
+
+    /*
+       Neon District
+    */
+
+    safeAddBuilding(400, 930, 180, 150, "Neon Club", "Neon District");
+    safeAddBuilding(620, 930, 170, 150, "Music Hall", "Neon District");
+    safeAddBuilding(1010, 930, 190, 150, "Cyber Cafe", "Neon District");
+    safeAddBuilding(1220, 930, 180, 150, "Night Market", "Neon District");
+
+    safeAddBuilding(400, 1120, 180, 100, "Food Court", "Neon District");
+    safeAddBuilding(620, 1120, 170, 100, "Game Store", "Neon District");
+
+    /*
+       Old Town
+    */
+
+    safeAddBuilding(30, 1450, 180, 160, "Old House", "Old Town");
+    safeAddBuilding(410, 1450, 160, 160, "Museum", "Old Town");
+    safeAddBuilding(1010, 1450, 190, 160, "Old Library", "Old Town");
+    safeAddBuilding(1220, 1450, 180, 160, "Town Hall", "Old Town");
+
+    /*
+       Suburbs
+    */
+
+    safeAddBuilding(30, 1940, 180, 90, "Family House", "Suburbs");
+    safeAddBuilding(410, 1940, 180, 90, "Family House", "Suburbs");
+    safeAddBuilding(1010, 1940, 180, 90, "Modern House", "Suburbs");
+    safeAddBuilding(1220, 1940, 180, 90, "Villa", "Suburbs");
+
+    /*
+       Industrial
+    */
+
+    safeAddBuilding(2140, 40, 180, 160, "Factory A", "Industrial");
+    safeAddBuilding(2380, 40, 180, 160, "Factory B", "Industrial");
+    safeAddBuilding(2740, 40, 200, 160, "Warehouse", "Industrial");
+
+    safeAddBuilding(2140, 430, 180, 180, "Workshop", "Industrial");
+    safeAddBuilding(2380, 430, 180, 180, "Machine Plant", "Industrial");
+    safeAddBuilding(2740, 430, 200, 180, "Cargo Depot", "Industrial");
+
+    /*
+       Harbor
+    */
+
+    safeAddBuilding(2140, 930, 190, 150, "Harbor Office", "Harbor");
+    safeAddBuilding(2390, 930, 190, 150, "Dock Warehouse", "Harbor");
+    safeAddBuilding(2740, 930, 200, 150, "Shipping Center", "Harbor");
+
+    /*
+       Central City
+    */
+
+    safeAddBuilding(2140, 1450, 180, 170, "Central Hospital", "Central City");
+    safeAddBuilding(2390, 1450, 180, 170, "Police Station", "Central City");
+    safeAddBuilding(2740, 1450, 200, 170, "Bank Building", "Central City");
+
+    /*
+       Beach
+    */
+
+    safeAddBuilding(2140, 1940, 180, 100, "Beach Cafe", "Beach");
+    safeAddBuilding(2390, 1940, 180, 100, "Surf Shop", "Beach");
+    safeAddBuilding(2740, 1940, 200, 100, "Beach Hotel", "Beach");
+
+    /*
+       Airport
+    */
+
+    safeAddBuilding(3050, 450, 170, 130, "Airport Terminal", "Airport");
+    safeAddBuilding(3300, 450, 200, 130, "Airport Office", "Airport");
+
+    /* =========================================================
+       LANDMARKS
+       ========================================================= */
+
+    const landmarks = [
+        {
+            x: 720,
+            y: 310,
+            label: "CITY PLAZA",
+            icon: "🏙️"
+        },
+        {
+            x: 1700,
+            y: 310,
+            label: "CENTRAL PARK",
+            icon: "🌳"
+        },
+        {
+            x: 3100,
+            y: 300,
+            label: "AIRPORT",
+            icon: "✈️"
+        },
+        {
+            x: 3000,
+            y: 1150,
+            label: "HARBOR",
+            icon: "⚓"
+        },
+        {
+            x: 3100,
+            y: 1900,
+            label: "BEACH",
+            icon: "🏖️"
+        }
+    ];
+
+    /* =========================================================
+       INTERACTION POINTS
+       ========================================================= */
+
+    const points = [
+        {
+            id: "mission",
+            x: 720,
+            y: 650,
+            radius: 70,
+            label: "MISSION",
+            icon: "📋"
+        },
+        {
+            id: "garage",
+            x: 2500,
+            y: 1120,
+            radius: 70,
+            label: "GARAGE",
+            icon: "🚗"
+        },
+        {
+            id: "property",
+            x: 1710,
+            y: 1450,
+            radius: 70,
+            label: "PROPERTY",
+            icon: "🏠"
+        },
+        {
+            id: "shop",
+            x: 1150,
+            y: 1160,
+            radius: 70,
+            label: "SHOP",
+            icon: "🛒"
+        },
+        {
+            id: "club",
+            x: 490,
+            y: 850,
+            radius: 70,
+            label: "CLUB",
+            icon: "🎵"
+        },
+        {
+            id: "bank",
+            x: 2840,
+            y: 1600,
+            radius: 70,
+            label: "BANK",
+            icon: "🏦"
+        },
+        {
+            id: "airport",
+            x: 3150,
+            y: 650,
+            radius: 80,
+            label: "AIRPORT",
+            icon: "✈️"
+        }
+    ];
+
+    /* =========================================================
+       VEHICLES
+       ========================================================= */
+
+    const vehicles = [
+        {
+            x: 2300,
+            y: 1040,
+            w: 58,
+            h: 32,
+            color: "#ff4f81",
+            name: "Street Car",
+            speed: 5
+        },
+        {
+            x: 1600,
+            y: 770,
+            w: 58,
+            h: 32,
+            color: "#44d9ff",
+            name: "City Car",
+            speed: 5.2
+        },
+        {
+            x: 2880,
+            y: 1270,
+            w: 62,
+            h: 34,
+            color: "#ffc34d",
+            name: "Taxi",
+            speed: 4.8
+        },
+        {
+            x: 620,
+            y: 1780,
+            w: 64,
+            h: 35,
+            color: "#8dff67",
+            name: "Sport Car",
+            speed: 6
+        },
+        {
+            x: 3250,
+            y: 1780,
+            w: 65,
+            h: 36,
+            color: "#b56cff",
+            name: "Cruiser",
+            speed: 5.5
+        }
+    ];
+
+    /* =========================================================
+       NPCs
+       ========================================================= */
+
+    const npcs = [];
+
+    const npcNames = [
+        "Alex",
+        "Sam",
+        "Mia",
+        "Leo",
+        "Nora",
+        "Kai",
+        "Luna",
+        "Max",
+        "Rafi",
+        "Zara",
+        "Noah",
+        "Ari",
+        "Ryan",
+        "Ivy",
+        "Adam",
+        "Sara",
+        "Evan",
+        "Maya",
+        "Owen",
+        "Nina",
+        "Ray",
+        "Tara",
+        "Jay",
+        "Liam",
+        "Ella",
+        "Finn",
+        "Ava",
+        "Milo",
+        "Rina",
+        "Theo",
+        "Emma",
+        "Zayn",
+        "Aria",
+        "Dylan",
+        "Sami",
+        "Ruby",
+        "Cole",
+        "Niko"
+    ];
+
+    /*
+       NPC positions intentionally placed on open road / plaza
+       areas rather than inside buildings.
+    */
+
+    const npcSpawns = [
+        [300, 300],
+        [430, 300],
+        [570, 300],
+        [720, 300],
+        [900, 300],
+        [1500, 300],
+        [1700, 300],
+        [2100, 300],
+        [2700, 300],
+        [3200, 300],
+
+        [300, 820],
+        [500, 820],
+        [700, 820],
+        [900, 820],
+        [1500, 820],
+        [1800, 820],
+        [2100, 820],
+        [2700, 820],
+        [3200, 820],
+
+        [300, 1330],
+        [700, 1330],
+        [1500, 1330],
+        [1800, 1330],
+        [2100, 1330],
+        [2700, 1330],
+        [3200, 1330],
+
+        [300, 1840],
+        [700, 1840],
+        [1500, 1840],
+        [1800, 1840],
+        [2100, 1840],
+        [2700, 1840],
+        [3200, 1840],
+
+        [500, 2150],
+        [900, 2150],
+        [1500, 2150],
+        [2300, 2150],
+        [2900, 2150]
+    ];
+
+    npcSpawns.forEach((pos, index) => {
+        npcs.push({
+            x: pos[0],
+            y: pos[1],
+
+            name: npcNames[index % npcNames.length],
+
+            radius: 12,
+
+            dirX: random(-1, 1),
+            dirY: random(-1, 1),
+
+            speed: random(0.25, 0.65),
+
+            timer: randomInt(30, 150),
+
+            talkable: index % 4 === 0
+        });
+    });
+
+    /* =========================================================
+       COLLECTIBLES
+       ========================================================= */
+
+    const collectibles = [];
+
+    const collectibleSpawns = [
+        [180, 300],
+        [470, 300],
+        [780, 300],
+        [1100, 300],
+        [1400, 300],
+
+        [300, 820],
+        [620, 820],
+        [940, 820],
+        [1300, 820],
+        [1600, 820],
+
+        [300, 1330],
+        [650, 1330],
+        [1000, 1330],
+        [1400, 1330],
+        [1750, 1330],
+
+        [300, 1840],
+        [700, 1840],
+        [1000, 1840],
+        [1450, 1840],
+        [1800, 1840],
+
+        [2200, 2150],
+        [2500, 2150],
+        [2800, 2150],
+        [3100, 2150],
+        [3400, 2150]
+    ];
+
+    collectibleSpawns.forEach((p, i) => {
+        collectibles.push({
+            x: p[0],
+            y: p[1],
+
+            type: i % 5 === 0 ? "star" : "coin",
+
+            collected: false,
+
+            pulse: random(0, Math.PI * 2)
+        });
+    });
+
+    /* =========================================================
+       MISSIONS
+       ========================================================= */
+
+    const missions = [
+        {
+            id: "delivery",
+            title: "City Delivery",
+            description:
+                "Take a delivery from the city plaza to the neon district.",
+            start: {
+                x: 720,
+                y: 650
+            },
+            target: {
+                x: 1150,
+                y: 1160
+            },
+            reward: 180,
+            rep: 12,
+            xp: 40
+        },
+
+        {
+            id: "shopping",
+            title: "Quick Shopping",
+            description:
+                "Visit the market and return to the mission point.",
+            start: {
+                x: 1150,
+                y: 1160
+            },
+            target: {
+                x: 720,
+                y: 650
+            },
+            reward: 220,
+            rep: 15,
+            xp: 50
+        },
+
+        {
+            id: "airport",
+            title: "Airport Run",
+            description:
+                "Reach the airport terminal.",
+            start: {
+                x: 720,
+                y: 650
+            },
+            target: {
+                x: 3150,
+                y: 650
+            },
+            reward: 350,
+            rep: 22,
+            xp: 80
+        },
+
+        {
+            id: "harbor",
+            title: "Harbor Job",
+            description:
+                "Head to the harbor and complete the job.",
+            start: {
+                x: 2500,
+                y: 1120
+            },
+            target: {
+                x: 3000,
+                y: 1150
+            },
+            reward: 420,
+            rep: 28,
+            xp: 100
+        },
+
+        {
+            id: "beach",
+            title: "Beach Visit",
+            description:
+                "Take a trip across the city and reach the beach.",
+            start: {
+                x: 3000,
+                y: 1150
+            },
+            target: {
+                x: 3100,
+                y: 1900
+            },
+            reward: 500,
+            rep: 35,
+            xp: 120
+        }
+    ];
+
+    /* =========================================================
+       SAFE SPAWN
+       ========================================================= */
+
+    function isPositionBlocked(x, y, radius = 12) {
+        const playerRect = {
+            x: x - radius,
+            y: y - radius,
+            w: radius * 2,
+            h: radius * 2
+        };
+
+        if (
+            x < radius ||
+            y < radius ||
+            x > WORLD_W - radius ||
+            y > WORLD_H - radius
+        ) {
+            return true;
+        }
+
+        return buildings.some((b) => {
+            return rectanglesOverlap(
+                playerRect,
+                b,
+                2
+            );
+        });
+    }
+
+    function findSafeSpawn(preferredX, preferredY) {
+        if (!isPositionBlocked(preferredX, preferredY)) {
+            return {
+                x: preferredX,
+                y: preferredY
+            };
+        }
+
+        const attempts = [
+            [250, 300],
+            [300, 300],
+            [350, 300],
+            [300, 330],
+            [300, 270],
+            [400, 300],
+            [200, 300]
+        ];
+
+        for (const p of attempts) {
+            if (!isPositionBlocked(p[0], p[1])) {
+                return {
+                    x: p[0],
+                    y: p[1]
+                };
+            }
+        }
+
+        return {
+            x: 250,
+            y: 300
+        };
+    }
+
+    const safeSpawn = findSafeSpawn(250, 300);
+
+    player.x = safeSpawn.x;
+    player.y = safeSpawn.y;
+
+    /* =========================================================
+       COLLISION
+       ========================================================= */
+
+    function playerRectAt(x, y) {
+        return {
+            x: x - player.width / 2,
+            y: y - player.height / 2,
+            w: player.width,
+            h: player.height
+        };
+    }
+
+    function collidesWithBuilding(x, y) {
+        const p = playerRectAt(x, y);
+
+        return buildings.some((b) => {
+            return rectanglesOverlap(
+                p,
+                b,
+                3
+            );
+        });
+    }
+
+    function collidesWithWorld(x, y) {
+        const halfW = player.width / 2;
+        const halfH = player.height / 2;
+
+        if (x - halfW < 0) {
+            return true;
+        }
+
+        if (y - halfH < 0) {
+            return true;
+        }
+
+        if (x + halfW > WORLD_W) {
+            return true;
+        }
+
+        if (y + halfH > WORLD_H) {
+            return true;
+        }
+
+        return collidesWithBuilding(x, y);
+    }
+
+    /*
+       IMPORTANT FIX:
+       X and Y movement are tested separately.
+
+       Old style:
+          move X + Y together
+
+       Problem:
+          character can get stuck against a corner.
+
+       New style:
+          test X
+          then test Y
+
+       This allows sliding along walls.
+    */
+
+    function movePlayer(dx, dy) {
+        if (state.paused || state.panelOpen) {
+            return;
+        }
+
+        if (dx === 0 && dy === 0) {
+            return;
+        }
+
+        const nextX = player.x + dx;
+
+        if (!collidesWithWorld(nextX, player.y)) {
+            player.x = nextX;
+        }
+
+        const nextY = player.y + dy;
+
+        if (!collidesWithWorld(player.x, nextY)) {
+            player.y = nextY;
+        }
+
+        player.x = clamp(
+            player.x,
+            player.width / 2,
+            WORLD_W - player.width / 2
+        );
+
+        player.y = clamp(
+            player.y,
+            player.height / 2,
+            WORLD_H - player.height / 2
+        );
+    }
+
+    /* =========================================================
+       INPUT MOVEMENT
+       ========================================================= */
+
+    function updatePlayer() {
+        if (state.paused || state.panelOpen) {
+            return;
+        }
+
+        let dx = 0;
+        let dy = 0;
+
+        if (keys.ArrowLeft || keys.a || keys.A) {
+            dx -= 1;
+            player.direction = "left";
+        }
+
+        if (keys.ArrowRight || keys.d || keys.D) {
+            dx += 1;
+            player.direction = "right";
+        }
+
+        if (keys.ArrowUp || keys.w || keys.W) {
+            dy -= 1;
+            player.direction = "up";
+        }
+
+        if (keys.ArrowDown || keys.s || keys.S) {
+            dy += 1;
+            player.direction = "down";
+        }
+
+        if (dx === 0 && dy === 0) {
+            return;
+        }
+
+        const length = Math.sqrt(dx * dx + dy * dy);
+
+        dx /= length;
+        dy /= length;
+
+        const running =
+            keys.Shift &&
+            player.energy > 0;
+
+        const speed =
+            running
+                ? player.runSpeed
+                : player.speed;
+
+        if (running) {
+            player.energy -= 0.8;
+
+            if (player.energy < 0) {
+                player.energy = 0;
+            }
+        } else {
+            player.energy += 0.35;
+
+            if (player.energy > 100) {
+                player.energy = 100;
+            }
+        }
+
+        movePlayer(
+            dx * speed,
+            dy * speed
+        );
+
+        player.walkFrame += 0.2;
+    }
+
+    /* =========================================================
+       CAMERA
+       ========================================================= */
+
+    function updateCamera() {
+        const targetX =
+            player.x - VIEW_W / 2;
+
+        const targetY =
+            player.y - VIEW_H / 2;
+
+        state.camera.x +=
+            (targetX - state.camera.x) * 0.1;
+
+        state.camera.y +=
+            (targetY - state.camera.y) * 0.1;
+
+        state.camera.x = clamp(
+            state.camera.x,
+            0,
+            WORLD_W - VIEW_W
+        );
+
+        state.camera.y = clamp(
+            state.camera.y,
+            0,
+            WORLD_H - VIEW_H
+        );
+    }
+
+    /* =========================================================
+       TIME
+       ========================================================= */
+
+    function updateTime() {
+        state.dayTime += 0.0025;
+
+        if (state.dayTime >= 24) {
+            state.dayTime = 0;
+        }
+    }
+
+    /* =========================================================
+       NPC UPDATE
+       ========================================================= */
+
+    function updateNPCs() {
+        if (state.paused || state.panelOpen) {
+            return;
+        }
+
+        npcs.forEach((npc) => {
+            npc.timer--;
+
+            if (npc.timer <= 0) {
+                npc.dirX = random(-1, 1);
+                npc.dirY = random(-1, 1);
+
+                const length =
+                    Math.sqrt(
+                        npc.dirX * npc.dirX +
+                        npc.dirY * npc.dirY
+                    );
+
+                if (length > 0) {
+                    npc.dirX /= length;
+                    npc.dirY /= length;
+                }
+
+                npc.timer = randomInt(50, 180);
+            }
+
+            const nextX =
+                npc.x + npc.dirX * npc.speed;
+
+            const nextY =
+                npc.y + npc.dirY * npc.speed;
+
+            if (
+                !isPositionBlocked(
+                    nextX,
+                    nextY,
+                    npc.radius
+                )
+            ) {
+                npc.x = nextX;
+                npc.y = nextY;
+            } else {
+                npc.dirX *= -1;
+                npc.dirY *= -1;
+                npc.timer = 20;
+            }
+        });
+    }
+
+    /* =========================================================
+       COLLECTIBLES
+       ========================================================= */
+
+    function updateCollectibles() {
+        collectibles.forEach((item) => {
+            if (item.collected) {
+                return;
+            }
+
+            item.pulse += 0.05;
+
+            const d = distance(
+                {
+                    x: player.x,
+                    y: player.y
+                },
+                item
+            );
+
+            if (d < 25) {
+                item.collected = true;
+
+                if (item.type === "star") {
+                    state.cash += 25;
+                    state.xp += 10;
+                    state.rep += 1;
+                } else {
+                    state.cash += 10;
+                    state.xp += 4;
+                }
+
+                updateHUD();
+                checkLevel();
+            }
+        });
+    }
+
+    /* =========================================================
+       LEVEL SYSTEM
+       ========================================================= */
+
+    function checkLevel() {
+        const required =
+            state.level * 100;
+
+        while (state.xp >= required) {
+            state.xp -= required;
+            state.level += 1;
+
+            state.cash += 100;
+            state.rep += 5;
+
+            showToast(
+                `Level Up! You are now level ${state.level}.`
+            );
+        }
+    }
+
+    /* =========================================================
+       HUD
+       ========================================================= */
 
     function updateHUD() {
         if (cashEl) {
-            cashEl.textContent = Math.floor(state.cash);
+            cashEl.textContent =
+                Math.floor(state.cash);
         }
 
         if (repEl) {
-            repEl.textContent = Math.floor(state.rep);
+            repEl.textContent =
+                Math.floor(state.rep);
         }
 
         if (propertyEl) {
-            propertyEl.textContent = state.property;
+            propertyEl.textContent =
+                state.property;
+        }
+    }
+
+    /* =========================================================
+       MISSION SYSTEM
+       ========================================================= */
+
+    function getNextMission() {
+        return missions.find(
+            (m) =>
+                !state.missionsCompleted.includes(
+                    m.id
+                )
+        );
+    }
+
+    function startMission(mission) {
+        if (state.activeMission) {
+            return;
+        }
+
+        state.activeMission = {
+            ...mission
+        };
+
+        setMissionText(
+            `${mission.title}: ${mission.description}`
+        );
+
+        showToast(
+            `Mission started: ${mission.title}`
+        );
+    }
+
+    function completeMission() {
+        const mission =
+            state.activeMission;
+
+        if (!mission) {
+            return;
+        }
+
+        state.cash += mission.reward;
+        state.rep += mission.rep;
+        state.xp += mission.xp;
+
+        state.missionsCompleted.push(
+            mission.id
+        );
+
+        state.activeMission = null;
+
+        checkLevel();
+        updateHUD();
+
+        setMissionText(
+            `Mission complete! +$${mission.reward}, +${mission.rep} REP`
+        );
+
+        showToast(
+            `Mission complete! +$${mission.reward}`
+        );
+    }
+
+    function updateMission() {
+        const mission =
+            state.activeMission;
+
+        if (!mission) {
+            return;
+        }
+
+        const d = distance(
+            {
+                x: player.x,
+                y: player.y
+            },
+            mission.target
+        );
+
+        if (d < 70) {
+            completeMission();
         }
     }
 
@@ -595,946 +1301,197 @@
         }
     }
 
-    function addCash(amount) {
-        state.cash = Math.max(0, state.cash + amount);
-        updateHUD();
-    }
-
-    function addRep(amount) {
-        state.rep = Math.max(0, state.rep + amount);
-
-        checkLevel();
-
-        updateHUD();
-    }
-
-    function addXP(amount) {
-        state.xp += amount;
-
-        checkLevel();
-
-        updateHUD();
-    }
-
-    function checkLevel() {
-        const newLevel = Math.floor(state.xp / 100) + 1;
-
-        if (newLevel > state.level) {
-            state.level = newLevel;
-
-            showPanel(
-                "⭐ LEVEL UP!",
-                `Congratulations! You reached Level ${state.level}.`,
-                [
-                    {
-                        text: "Continue",
-                        action: hidePanel
-                    }
-                ]
-            );
-        }
-    }
-
-    // ---------------------------------------------------------
-    // PANEL
-    // ---------------------------------------------------------
-
-    function showPanel(title, text, buttons = []) {
-        if (!panel) {
-            return;
-        }
-
-        panelTitle.textContent = title;
-        panelText.textContent = text;
-
-        panelButtons.innerHTML = "";
-
-        buttons.forEach((button) => {
-            const element = document.createElement("button");
-
-            element.type = "button";
-            element.textContent = button.text;
-
-            element.addEventListener("click", () => {
-                button.action();
-            });
-
-            panelButtons.appendChild(element);
-        });
-
-        panel.classList.remove("hidden");
-    }
-
-    function hidePanel() {
-        if (!panel) {
-            return;
-        }
-
-        panel.classList.add("hidden");
-        panelButtons.innerHTML = "";
-    }
-
-    // ---------------------------------------------------------
-    // COLLISION
-    // ---------------------------------------------------------
-
-    function circleRectCollision(cx, cy, radius, rect) {
-        const nearestX = clamp(cx, rect.x, rect.x + rect.w);
-        const nearestY = clamp(cy, rect.y, rect.y + rect.h);
-
-        const dx = cx - nearestX;
-        const dy = cy - nearestY;
-
-        return dx * dx + dy * dy < radius * radius;
-    }
-
-    function isBlocked(x, y) {
-        const radius = player.radius;
-
-        if (
-            x - radius < 25 ||
-            y - radius < 25 ||
-            x + radius > WORLD.width - 25 ||
-            y + radius > WORLD.height - 25
-        ) {
-            return true;
-        }
-
-        for (const building of buildings) {
-            if (circleRectCollision(x, y, radius, building)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // ---------------------------------------------------------
-    // PLAYER MOVEMENT
-    // ---------------------------------------------------------
-
-    function movePlayer(dx, dy) {
-        if (dx === 0 && dy === 0) {
-            return;
-        }
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            player.direction = dx > 0 ? "right" : "left";
-        } else {
-            player.direction = dy > 0 ? "down" : "up";
-        }
-
-        const nextX = player.x + dx;
-        const nextY = player.y + dy;
-
-        if (!isBlocked(nextX, player.y)) {
-            player.x = nextX;
-        }
-
-        if (!isBlocked(player.x, nextY)) {
-            player.y = nextY;
-        }
-    }
-
-    // ---------------------------------------------------------
-    // CAMERA
-    // ---------------------------------------------------------
-
-    function updateCamera() {
-        camera.x = player.x - VIEW.width / 2;
-        camera.y = player.y - VIEW.height / 2;
-
-        camera.x = clamp(
-            camera.x,
-            0,
-            WORLD.width - VIEW.width
-        );
-
-        camera.y = clamp(
-            camera.y,
-            0,
-            WORLD.height - VIEW.height
-        );
-    }
-
-    // ---------------------------------------------------------
-    // MISSIONS
-    // ---------------------------------------------------------
-
-    const missionList = [
-        {
-            id: "delivery",
-            title: "📦 City Delivery",
-            description: "Deliver a package to Neon Square.",
-            reward: 250,
-            xp: 35,
-            rep: 5
-        },
-
-        {
-            id: "shopping",
-            title: "🛍️ Quick Shopping",
-            description: "Visit the Neon District shop.",
-            reward: 180,
-            xp: 25,
-            rep: 4
-        },
-
-        {
-            id: "airport",
-            title: "✈️ Airport Run",
-            description: "Reach the airport.",
-            reward: 350,
-            xp: 45,
-            rep: 7
-        },
-
-        {
-            id: "harbor",
-            title: "⚓ Harbor Job",
-            description: "Reach the harbor.",
-            reward: 300,
-            xp: 40,
-            rep: 6
-        },
-
-        {
-            id: "beach",
-            title: "🌴 Beach Visit",
-            description: "Meet the contact at the beach.",
-            reward: 220,
-            xp: 30,
-            rep: 5
-        }
-    ];
-
-    function startMission() {
-        if (state.mission) {
-            showPanel(
-                "🎯 Mission Active",
-                "Finish your current mission before starting another.",
-                [
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
-
-            return;
-        }
-
-        const available = missionList[
-            state.completedMissions % missionList.length
-        ];
-
-        state.mission = available;
-        state.missionProgress = 0;
-
-        setMission(
-            `${available.title}: ${available.description}`
-        );
-
-        addRep(1);
-
-        hidePanel();
-    }
-
-    function missionTarget() {
-        if (!state.mission) {
-            return null;
-        }
-
-        switch (state.mission.id) {
-            case "delivery":
-                return {
-                    x: 1750,
-                    y: 760
-                };
-
-            case "shopping":
-                return {
-                    x: 1740,
-                    y: 560
-                };
-
-            case "airport":
-                return {
-                    x: 2700,
-                    y: 1720
-                };
-
-            case "harbor":
-                return {
-                    x: 650,
-                    y: 1470
-                };
-
-            case "beach":
-                return {
-                    x: 1750,
-                    y: 1470
-                };
-
-            default:
-                return null;
-        }
-    }
-
-    function updateMission() {
-        if (!state.mission) {
-            return;
-        }
-
-        const target = missionTarget();
-
-        if (!target) {
-            return;
-        }
-
-        if (distance(player, target) < 75) {
-            completeMission();
-        }
-    }
-
-    function completeMission() {
-        if (!state.mission) {
-            return;
-        }
-
-        const mission = state.mission;
-
-        state.mission = null;
-        state.missionProgress = 0;
-
-        state.completedMissions += 1;
-
-        addCash(mission.reward);
-        addXP(mission.xp);
-        addRep(mission.rep);
-
-        setMission(
-            "✅ Mission complete! Visit the 🎯 marker for another job."
-        );
-
-        showPanel(
-            "🏆 Mission Complete",
-            `${mission.title}\n\n+$${mission.reward} cash\n+${mission.xp} XP\n+${mission.rep} reputation`,
-            [
-                {
-                    text: "Continue",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // GARAGE
-    // ---------------------------------------------------------
-
-    function openGarage() {
-        const carPrice = 450;
-
-        if (player.inVehicle) {
-            showPanel(
-                "🚗 Garage",
-                "You are already driving a vehicle.",
-                [
-                    {
-                        text: "Exit Vehicle",
-                        action: () => {
-                            exitVehicle();
-                            hidePanel();
-                        }
-                    },
-
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
-
-            return;
-        }
-
-        showPanel(
-            "🚗 Cracker Garage",
-            `Buy a personal car for $${carPrice}.\n\nOwned cars: ${state.carsOwned}`,
-            [
-                {
-                    text: `Buy Car — $${carPrice}`,
-
-                    action: () => {
-                        if (state.cash < carPrice) {
-                            showPanel(
-                                "❌ Not Enough Cash",
-                                "Complete missions to earn more money.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        addCash(-carPrice);
-
-                        state.carsOwned += 1;
-
-                        showPanel(
-                            "🚗 Car Purchased",
-                            "Your new car is ready. Find a vehicle and press Action to enter.",
-                            [
-                                {
-                                    text: "Nice!",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Close",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // VEHICLE
-    // ---------------------------------------------------------
-
-    function nearestVehicle() {
-        let best = null;
-        let bestDistance = Infinity;
-
-        for (const vehicle of vehicles) {
-            const d = distance(player, vehicle);
-
-            if (d < bestDistance) {
-                best = vehicle;
-                bestDistance = d;
-            }
-        }
-
-        return {
-            vehicle: best,
-            distance: bestDistance
-        };
-    }
-
-    function enterVehicle() {
-        if (state.carsOwned <= 0) {
-            showPanel(
-                "🚗 Vehicle",
-                "You don't own a car yet. Visit the garage first.",
-                [
-                    {
-                        text: "Go to Garage Info",
-                        action: () => {
-                            hidePanel();
-                            openGarage();
-                        }
-                    },
-
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
-
-            return;
-        }
-
-        const nearest = nearestVehicle();
-
-        if (!nearest.vehicle || nearest.distance > 85) {
-            showPanel(
-                "🚗 Vehicle",
-                "Move closer to a car first.",
-                [
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
-
-            return;
-        }
-
-        player.inVehicle = true;
-        player.vehicleId = nearest.vehicle.id;
-
-        nearest.vehicle.owned = true;
-
-        showPanel(
-            "🚗 Driving",
-            "You are now driving. Use the movement controls to explore Cracker City.",
-            [
-                {
-                    text: "Drive!",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    function exitVehicle() {
-        player.inVehicle = false;
-        player.vehicleId = null;
-    }
-
-    function updateVehicle() {
-        if (!player.inVehicle) {
-            return;
-        }
-
-        const vehicle = vehicles.find(
-            (item) => item.id === player.vehicleId
-        );
-
-        if (!vehicle) {
-            exitVehicle();
-            return;
-        }
-
-        vehicle.x = player.x;
-        vehicle.y = player.y;
-    }
-
-    // ---------------------------------------------------------
-    // PROPERTY
-    // ---------------------------------------------------------
-
-    function buyProperty() {
-        const propertyPrices = [
-            650,
-            1000,
-            1500,
-            2200,
-            3200
-        ];
-
-        if (state.property >= propertyPrices.length) {
-            showPanel(
-                "🏠 Properties",
-                "You own all available Cracker City properties.",
-                [
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
-
-            return;
-        }
-
-        const price = propertyPrices[state.property];
-
-        showPanel(
-            "🏠 Property",
-            `Buy property #${state.property + 1} for $${price}.\n\nOwning properties increases your reputation.`,
-            [
-                {
-                    text: `Buy — $${price}`,
-
-                    action: () => {
-                        if (state.cash < price) {
-                            showPanel(
-                                "❌ Not Enough Cash",
-                                "Complete more missions first.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        addCash(-price);
-
-                        state.property += 1;
-
-                        addRep(12);
-                        addXP(20);
-
-                        showPanel(
-                            "🏠 Property Purchased",
-                            `You now own ${state.property} property.`,
-                            [
-                                {
-                                    text: "Continue",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Cancel",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // SHOP
-    // ---------------------------------------------------------
-
-    function openShop() {
-        showPanel(
-            "🛍️ City Shop",
-            "Choose something to spend your temporary cash on.",
-            [
-                {
-                    text: "🍔 Food — $25",
-
-                    action: () => {
-                        if (state.cash < 25) {
-                            showPanel(
-                                "Not enough cash",
-                                "You need $25.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        addCash(-25);
-
-                        player.energy = Math.min(
-                            100,
-                            player.energy + 25
-                        );
-
-                        state.shopVisits += 1;
-
-                        showPanel(
-                            "🍔 Energy Restored",
-                            "Your energy increased.",
-                            [
-                                {
-                                    text: "Close",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "👕 Outfit — $100",
-
-                    action: () => {
-                        if (state.cash < 100) {
-                            showPanel(
-                                "Not enough cash",
-                                "You need $100.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        addCash(-100);
-                        addRep(3);
-
-                        showPanel(
-                            "👕 New Outfit",
-                            "Your reputation increased.",
-                            [
-                                {
-                                    text: "Close",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Close",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // CLUB
-    // ---------------------------------------------------------
-
-    function visitClub() {
-        showPanel(
-            "🎵 Neon Club",
-            "Spend an evening at the city's most popular club.",
-            [
-                {
-                    text: "Socialize — $60",
-
-                    action: () => {
-                        if (state.cash < 60) {
-                            showPanel(
-                                "Not enough cash",
-                                "You need $60.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        addCash(-60);
-                        addRep(8);
-                        addXP(10);
-
-                        showPanel(
-                            "⭐ New Contacts",
-                            "You met some new people around Cracker City.",
-                            [
-                                {
-                                    text: "Close",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Leave",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // BANK
-    // ---------------------------------------------------------
-
-    function openBank() {
-        showPanel(
-            "🏦 Cracker Bank",
-            `Cash: $${Math.floor(state.cash)}\nBank: $${Math.floor(state.bank)}`,
-            [
-                {
-                    text: "Deposit $100",
-
-                    action: () => {
-                        if (state.cash < 100) {
-                            showPanel(
-                                "Not enough cash",
-                                "You need $100 cash.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        addCash(-100);
-
-                        state.bank += 100;
-
-                        showPanel(
-                            "🏦 Deposit Complete",
-                            "Your temporary bank balance increased by $100.",
-                            [
-                                {
-                                    text: "Close",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Withdraw $100",
-
-                    action: () => {
-                        if (state.bank < 100) {
-                            showPanel(
-                                "Bank balance",
-                                "You don't have $100 in the bank.",
-                                [
-                                    {
-                                        text: "Close",
-                                        action: hidePanel
-                                    }
-                                ]
-                            );
-
-                            return;
-                        }
-
-                        state.bank -= 100;
-
-                        addCash(100);
-
-                        showPanel(
-                            "🏦 Withdrawal Complete",
-                            "You withdrew $100.",
-                            [
-                                {
-                                    text: "Close",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Close",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // AIRPORT
-    // ---------------------------------------------------------
-
-    function visitAirport() {
-        showPanel(
-            "✈️ Cracker City Airport",
-            "The airport is one of the largest locations in the city.",
-            [
-                {
-                    text: "Explore",
-                    action: () => {
-                        addXP(5);
-                        addRep(1);
-
-                        showPanel(
-                            "✈️ Airport",
-                            "You explored the airport.",
-                            [
-                                {
-                                    text: "Close",
-                                    action: hidePanel
-                                }
-                            ]
-                        );
-                    }
-                },
-
-                {
-                    text: "Close",
-                    action: hidePanel
-                }
-            ]
-        );
-    }
-
-    // ---------------------------------------------------------
-    // INTERACTION
-    // ---------------------------------------------------------
+    /* =========================================================
+       INTERACTION
+       ========================================================= */
 
     function nearestPoint() {
         let best = null;
         let bestDistance = Infinity;
 
-        for (const point of points) {
-            const d = distance(player, point);
+        points.forEach((point) => {
+            const d = distance(
+                {
+                    x: player.x,
+                    y: player.y
+                },
+                point
+            );
 
-            if (d < bestDistance) {
+            if (
+                d < point.radius &&
+                d < bestDistance
+            ) {
                 best = point;
                 bestDistance = d;
             }
-        }
+        });
 
-        return {
-            point: best,
-            distance: bestDistance
-        };
+        return best;
+    }
+
+    function nearestNPC() {
+        let best = null;
+        let bestDistance = 999999;
+
+        npcs.forEach((npc) => {
+            if (!npc.talkable) {
+                return;
+            }
+
+            const d = distance(
+                {
+                    x: player.x,
+                    y: player.y
+                },
+                npc
+            );
+
+            if (d < 55 && d < bestDistance) {
+                best = npc;
+                bestDistance = d;
+            }
+        });
+
+        return best;
+    }
+
+    function nearestVehicle() {
+        let best = null;
+        let bestDistance = Infinity;
+
+        vehicles.forEach((vehicle) => {
+            const d = distance(
+                {
+                    x: player.x,
+                    y: player.y
+                },
+                {
+                    x: vehicle.x,
+                    y: vehicle.y
+                }
+            );
+
+            if (d < 75 && d < bestDistance) {
+                best = vehicle;
+                bestDistance = d;
+            }
+        });
+
+        return best;
     }
 
     function interact() {
-        if (player.inVehicle) {
-            exitVehicle();
-
-            showPanel(
-                "🚗 Vehicle",
-                "You left the vehicle.",
-                [
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
-
+        if (state.panelOpen) {
             return;
         }
 
-        const nearbyVehicle = nearestVehicle();
+        const point = nearestPoint();
+
+        if (point) {
+            openPoint(point);
+            return;
+        }
+
+        const npc = nearestNPC();
+
+        if (npc) {
+            talkToNPC(npc);
+            return;
+        }
+
+        const vehicle = nearestVehicle();
 
         if (
-            nearbyVehicle.vehicle &&
-            nearbyVehicle.distance < 75 &&
+            vehicle &&
             state.carsOwned > 0
         ) {
-            enterVehicle();
+            enterVehicle(vehicle);
             return;
         }
 
-        const nearby = nearestPoint();
+        showToast(
+            "Nothing nearby to interact with."
+        );
+    }
 
-        if (!nearby.point || nearby.distance > 85) {
-            showPanel(
-                "🏙️ Cracker City",
-                "Explore the city and move toward a glowing marker to interact.",
-                [
-                    {
-                        text: "Close",
-                        action: hidePanel
-                    }
-                ]
-            );
+    /* =========================================================
+       PANEL
+       ========================================================= */
 
+    function openPanel(title, text) {
+        if (!panel) {
             return;
         }
 
-        switch (nearby.point.id) {
+        state.panelOpen = true;
+
+        panel.classList.remove("hidden");
+        panel.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+
+        if (panelTitle) {
+            panelTitle.textContent = title;
+        }
+
+        if (panelText) {
+            panelText.textContent = text;
+        }
+
+        if (panelButtons) {
+            panelButtons.innerHTML = "";
+        }
+    }
+
+    function addPanelButton(text, callback) {
+        if (!panelButtons) {
+            return;
+        }
+
+        const button =
+            document.createElement("button");
+
+        button.type = "button";
+        button.textContent = text;
+
+        button.addEventListener(
+            "click",
+            () => {
+                callback();
+            }
+        );
+
+        panelButtons.appendChild(button);
+    }
+
+    function closePanel() {
+        if (!panel) {
+            return;
+        }
+
+        state.panelOpen = false;
+
+        panel.classList.add("hidden");
+        panel.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        if (panelButtons) {
+            panelButtons.innerHTML = "";
+        }
+    }
+
+    /* =========================================================
+       POINT INTERACTIONS
+       ========================================================= */
+
+    function openPoint(point) {
+        switch (point.id) {
             case "mission":
-                startMission();
+                openMissionPoint();
                 break;
 
             case "garage":
@@ -1542,7 +1499,7 @@
                 break;
 
             case "property":
-                buyProperty();
+                openProperty();
                 break;
 
             case "shop":
@@ -1550,7 +1507,7 @@
                 break;
 
             case "club":
-                visitClub();
+                openClub();
                 break;
 
             case "bank":
@@ -1558,622 +1515,1194 @@
                 break;
 
             case "airport":
-                visitAirport();
-                break;
-
-            default:
+                openAirport();
                 break;
         }
     }
 
-    // ---------------------------------------------------------
-    // NPC UPDATE
-    // ---------------------------------------------------------
+    /* =========================================================
+       MISSION POINT
+       ========================================================= */
 
-    function updateNPCs(dt) {
-        for (const npc of npcs) {
-            npc.changeTimer -= dt;
+    function openMissionPoint() {
+        const nextMission =
+            getNextMission();
 
-            if (npc.changeTimer <= 0) {
-                npc.direction =
-                    Math.random() * Math.PI * 2;
+        if (!nextMission) {
+            openPanel(
+                "Mission Center",
+                "You completed every available mission in this V3 build!"
+            );
 
-                npc.changeTimer =
-                    60 + Math.random() * 180;
-            }
+            addPanelButton(
+                "Close",
+                closePanel
+            );
 
-            const dx =
-                Math.cos(npc.direction) *
-                npc.speed *
-                dt;
-
-            const dy =
-                Math.sin(npc.direction) *
-                npc.speed *
-                dt;
-
-            const nextX = npc.x + dx;
-            const nextY = npc.y + dy;
-
-            if (
-                nextX > 30 &&
-                nextX < WORLD.width - 30 &&
-                nextY > 30 &&
-                nextY < WORLD.height - 30
-            ) {
-                npc.x = nextX;
-                npc.y = nextY;
-            } else {
-                npc.direction += Math.PI;
-            }
+            return;
         }
+
+        if (state.activeMission) {
+            openPanel(
+                "Mission Active",
+                `Current mission:\n${state.activeMission.title}\n\nGo to the target location to complete it.`
+            );
+
+            addPanelButton(
+                "Close",
+                closePanel
+            );
+
+            return;
+        }
+
+        openPanel(
+            nextMission.title,
+            `${nextMission.description}\n\nReward: $${nextMission.reward}\nREP: +${nextMission.rep}\nXP: +${nextMission.xp}`
+        );
+
+        addPanelButton(
+            "Start Mission",
+            () => {
+                startMission(nextMission);
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Cancel",
+            closePanel
+        );
     }
 
-    // ---------------------------------------------------------
-    // COLLECTIBLES
-    // ---------------------------------------------------------
+    /* =========================================================
+       GARAGE
+       ========================================================= */
 
-    function updateCollectibles() {
-        for (const item of collectibles) {
-            if (item.collected) {
-                continue;
-            }
+    function openGarage() {
+        if (state.carsOwned > 0) {
+            openPanel(
+                "Garage",
+                `You own ${state.carsOwned} vehicle(s).\n\nWalk near a car and press Action to enter it.`
+            );
 
-            if (distance(player, item) < 30) {
-                item.collected = true;
+            addPanelButton(
+                "Close",
+                closePanel
+            );
 
-                if (item.type === "coin") {
-                    addCash(25);
-                    addXP(3);
-                } else {
-                    addRep(2);
-                    addXP(5);
+            return;
+        }
+
+        openPanel(
+            "City Garage",
+            "Buy your first vehicle.\n\nPrice: $450\n\nVehicles make travelling around Cracker City faster."
+        );
+
+        addPanelButton(
+            "Buy Car — $450",
+            () => {
+                if (state.cash < 450) {
+                    showToast(
+                        "Not enough cash."
+                    );
+                    return;
                 }
+
+                state.cash -= 450;
+                state.carsOwned += 1;
+
+                updateHUD();
+
+                showToast(
+                    "Vehicle purchased!"
+                );
+
+                closePanel();
             }
-        }
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
     }
 
-    // ---------------------------------------------------------
-    // DAY / NIGHT
-    // ---------------------------------------------------------
+    /* =========================================================
+       VEHICLE
+       ========================================================= */
 
-    function updateTime(dt) {
-        state.dayTime += dt * 0.003;
-
-        if (state.dayTime >= 24) {
-            state.dayTime = 0;
+    function enterVehicle(vehicle) {
+        if (state.carsOwned <= 0) {
+            showToast(
+                "You need to buy a car first."
+            );
+            return;
         }
+
+        player.inVehicle = true;
+        player.vehicle = vehicle;
+
+        player.speed =
+            vehicle.speed || 5;
+
+        showToast(
+            `${vehicle.name} entered.`
+        );
     }
 
-    function isNight() {
+    function exitVehicle() {
+        player.inVehicle = false;
+        player.vehicle = null;
+        player.speed = 2.8;
+
+        showToast(
+            "You left the vehicle."
+        );
+    }
+
+    /* =========================================================
+       PROPERTY
+       ========================================================= */
+
+    function openProperty() {
+        const properties = [
+            {
+                name: "Small Apartment",
+                price: 650
+            },
+            {
+                name: "City Apartment",
+                price: 1000
+            },
+            {
+                name: "Modern House",
+                price: 1500
+            },
+            {
+                name: "Luxury Villa",
+                price: 2200
+            },
+            {
+                name: "City Mansion",
+                price: 3200
+            }
+        ];
+
+        const property =
+            properties[state.property];
+
+        if (!property) {
+            openPanel(
+                "Property",
+                "You already own every property available in this V3 build."
+            );
+
+            addPanelButton(
+                "Close",
+                closePanel
+            );
+
+            return;
+        }
+
+        openPanel(
+            "Property Office",
+            `${property.name}\n\nPrice: $${property.price}\n\nOwned: ${state.property}`
+        );
+
+        addPanelButton(
+            `Buy — $${property.price}`,
+            () => {
+                if (
+                    state.cash <
+                    property.price
+                ) {
+                    showToast(
+                        "Not enough cash."
+                    );
+                    return;
+                }
+
+                state.cash -=
+                    property.price;
+
+                state.property += 1;
+
+                state.rep += 5;
+                state.xp += 20;
+
+                checkLevel();
+                updateHUD();
+
+                showToast(
+                    `${property.name} purchased!`
+                );
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
+    }
+
+    /* =========================================================
+       SHOP
+       ========================================================= */
+
+    function openShop() {
+        openPanel(
+            "City Shop",
+            "Pick something useful for your adventure."
+        );
+
+        addPanelButton(
+            "Food — $25",
+            () => {
+                if (state.cash < 25) {
+                    showToast(
+                        "Not enough cash."
+                    );
+                    return;
+                }
+
+                state.cash -= 25;
+                player.energy = 100;
+                state.shopVisits += 1;
+
+                updateHUD();
+
+                showToast(
+                    "Energy restored!"
+                );
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Outfit — $80",
+            () => {
+                if (state.cash < 80) {
+                    showToast(
+                        "Not enough cash."
+                    );
+                    return;
+                }
+
+                state.cash -= 80;
+                state.rep += 3;
+                state.shopVisits += 1;
+
+                updateHUD();
+
+                showToast(
+                    "New outfit purchased!"
+                );
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
+    }
+
+    /* =========================================================
+       CLUB
+       ========================================================= */
+
+    function openClub() {
+        openPanel(
+            "Neon Club",
+            "Relax for a moment and meet people around the city."
+        );
+
+        addPanelButton(
+            "Socialize — $20",
+            () => {
+                if (state.cash < 20) {
+                    showToast(
+                        "Not enough cash."
+                    );
+                    return;
+                }
+
+                state.cash -= 20;
+                state.rep += 6;
+                state.xp += 12;
+
+                checkLevel();
+                updateHUD();
+
+                showToast(
+                    "Reputation increased!"
+                );
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
+    }
+
+    /* =========================================================
+       BANK
+       ========================================================= */
+
+    function openBank() {
+        openPanel(
+            "Cracker City Bank",
+            `Cash: $${Math.floor(state.cash)}\nBank: $${Math.floor(state.bank)}`
+        );
+
+        addPanelButton(
+            "Deposit $100",
+            () => {
+                if (state.cash < 100) {
+                    showToast(
+                        "You need at least $100 cash."
+                    );
+                    return;
+                }
+
+                state.cash -= 100;
+                state.bank += 100;
+
+                updateHUD();
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Withdraw $100",
+            () => {
+                if (state.bank < 100) {
+                    showToast(
+                        "Not enough money in bank."
+                    );
+                    return;
+                }
+
+                state.bank -= 100;
+                state.cash += 100;
+
+                updateHUD();
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
+    }
+
+    /* =========================================================
+       AIRPORT
+       ========================================================= */
+
+    function openAirport() {
+        openPanel(
+            "Cracker City Airport",
+            "The airport is one of the major landmarks of the city.\n\nYou can use it as a travel point while exploring."
+        );
+
+        addPanelButton(
+            "Travel to Downtown",
+            () => {
+                teleportPlayer(
+                    300,
+                    300
+                );
+
+                closePanel();
+            }
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
+    }
+
+    /* =========================================================
+       NPC TALK
+       ========================================================= */
+
+    function talkToNPC(npc) {
+        const messages = [
+            `Hey! I'm ${npc.name}. Nice city, isn't it?`,
+            `${npc.name}: You should check out the neon district.`,
+            `${npc.name}: The harbor gets busy at night.`,
+            `${npc.name}: Have you visited the beach yet?`,
+            `${npc.name}: Try completing some missions!`
+        ];
+
+        openPanel(
+            npc.name,
+            messages[
+                randomInt(
+                    0,
+                    messages.length - 1
+                )
+            ]
+        );
+
+        addPanelButton(
+            "Close",
+            closePanel
+        );
+    }
+
+    /* =========================================================
+       TELEPORT
+       ========================================================= */
+
+    function teleportPlayer(x, y) {
+        const safe =
+            findSafeSpawn(x, y);
+
+        player.x = safe.x;
+        player.y = safe.y;
+
+        updateCamera();
+
+        showToast(
+            "Travel complete."
+        );
+    }
+
+    /* =========================================================
+       TOAST
+       ========================================================= */
+
+    let toastTimer = null;
+
+    function showToast(message) {
+        let toast =
+            document.getElementById(
+                "cityToast"
+            );
+
+        if (!toast) {
+            toast =
+                document.createElement(
+                    "div"
+                );
+
+            toast.id =
+                "cityToast";
+
+            toast.style.position =
+                "fixed";
+
+            toast.style.left =
+                "50%";
+
+            toast.style.bottom =
+                "165px";
+
+            toast.style.transform =
+                "translateX(-50%)";
+
+            toast.style.zIndex =
+                "500";
+
+            toast.style.padding =
+                "10px 16px";
+
+            toast.style.borderRadius =
+                "12px";
+
+            toast.style.background =
+                "rgba(10,12,25,.94)";
+
+            toast.style.border =
+                "1px solid rgba(255,255,255,.14)";
+
+            toast.style.color =
+                "#fff";
+
+            toast.style.fontSize =
+                "13px";
+
+            toast.style.fontWeight =
+                "700";
+
+            toast.style.pointerEvents =
+                "none";
+
+            document.body.appendChild(
+                toast
+            );
+        }
+
+        toast.textContent = message;
+        toast.style.opacity = "1";
+
+        clearTimeout(toastTimer);
+
+        toastTimer = setTimeout(() => {
+            toast.style.opacity = "0";
+        }, 1800);
+    }
+
+    /* =========================================================
+       DRAW HELPERS
+       ========================================================= */
+
+    function screenX(x) {
         return (
-            state.dayTime >= 19 ||
-            state.dayTime < 6
+            x - state.camera.x
         );
     }
 
-    // ---------------------------------------------------------
-    // DRAW BACKGROUND
-    // ---------------------------------------------------------
-
-    function drawBackground() {
-        ctx.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
+    function screenY(y) {
+        return (
+            y - state.camera.y
         );
+    }
 
-        ctx.save();
-
-        ctx.translate(
-            -camera.x,
-            -camera.y
-        );
-
-        // Ground
-        ctx.fillStyle = "#182b24";
-
-        ctx.fillRect(
-            0,
-            0,
-            WORLD.width,
-            WORLD.height
-        );
-
-        // Beach
-        ctx.fillStyle = "#d6c27a";
-
-        ctx.fillRect(
-            1200,
-            1500,
-            1150,
-            900
-        );
-
-        // Water
-        ctx.fillStyle = "#0b4b6d";
-
-        ctx.fillRect(
-            0,
-            2100,
-            1200,
-            300
-        );
-
-        // Airport runway
-        ctx.fillStyle = "#343943";
-
-        ctx.fillRect(
-            2370,
-            1740,
-            1100,
-            230
-        );
-
-        ctx.fillStyle = "#c8c8c8";
-
-        ctx.setLineDash([35, 30]);
-
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 5;
+    function drawRoundedRect(
+        x,
+        y,
+        w,
+        h,
+        radius
+    ) {
+        const r =
+            Math.min(
+                radius,
+                w / 2,
+                h / 2
+            );
 
         ctx.beginPath();
 
         ctx.moveTo(
-            2400,
-            1855
+            x + r,
+            y
         );
 
-        ctx.lineTo(
-            3450,
-            1855
+        ctx.arcTo(
+            x + w,
+            y,
+            x + w,
+            y + h,
+            r
         );
 
-        ctx.stroke();
+        ctx.arcTo(
+            x + w,
+            y + h,
+            x,
+            y + h,
+            r
+        );
 
-        ctx.setLineDash([]);
+        ctx.arcTo(
+            x,
+            y + h,
+            x,
+            y,
+            r
+        );
 
-        // Roads
+        ctx.arcTo(
+            x,
+            y,
+            x + w,
+            y,
+            r
+        );
+
+        ctx.closePath();
+    }
+
+    /* =========================================================
+       DRAW GROUND
+       ========================================================= */
+
+    function drawGround() {
+        ctx.fillStyle = "#18231e";
+
+        ctx.fillRect(
+            0,
+            0,
+            VIEW_W,
+            VIEW_H
+        );
+    }
+
+    /* =========================================================
+       DRAW ROADS
+       ========================================================= */
+
+    function drawRoads() {
         roads.forEach((road) => {
-            ctx.fillStyle = "#272b34";
+            const x =
+                screenX(road.x);
+
+            const y =
+                screenY(road.y);
+
+            ctx.fillStyle =
+                road.type === "small"
+                    ? "#303541"
+                    : "#252a34";
 
             ctx.fillRect(
-                road.x,
-                road.y,
+                x,
+                y,
                 road.w,
                 road.h
             );
 
-            ctx.strokeStyle = "#5a5f6c";
-            ctx.lineWidth = 2;
+            /*
+               Road center markings
+            */
 
-            ctx.setLineDash([25, 25]);
+            ctx.strokeStyle =
+                "rgba(255,205,80,.65)";
+
+            ctx.lineWidth = 3;
+
+            ctx.setLineDash([
+                18,
+                18
+            ]);
+
+            ctx.beginPath();
 
             if (road.w > road.h) {
-                ctx.beginPath();
-
                 ctx.moveTo(
-                    road.x,
-                    road.y + road.h / 2
+                    x,
+                    y + road.h / 2
                 );
 
                 ctx.lineTo(
-                    road.x + road.w,
-                    road.y + road.h / 2
+                    x + road.w,
+                    y + road.h / 2
                 );
-
-                ctx.stroke();
             } else {
-                ctx.beginPath();
-
                 ctx.moveTo(
-                    road.x + road.w / 2,
-                    road.y
+                    x + road.w / 2,
+                    y
                 );
 
                 ctx.lineTo(
-                    road.x + road.w / 2,
-                    road.y + road.h
+                    x + road.w / 2,
+                    y + road.h
                 );
-
-                ctx.stroke();
             }
+
+            ctx.stroke();
 
             ctx.setLineDash([]);
         });
+    }
 
-        // District labels
-        ctx.textAlign = "center";
-        ctx.font = "bold 28px Arial";
+    /* =========================================================
+       DRAW BUILDINGS
+       ========================================================= */
 
-        districts.forEach((district) => {
-            ctx.fillStyle = "rgba(255,255,255,.12)";
+    function drawBuildings() {
+        buildings.forEach((building) => {
+            const x =
+                screenX(building.x);
 
-            ctx.fillText(
-                district.name,
-                district.x + district.w / 2,
-                district.y + 55
-            );
-        });
+            const y =
+                screenY(building.y);
 
-        // Buildings
-        buildings.forEach((building, index) => {
-            const buildingColor =
-                index % 3 === 0
-                    ? "#3c3150"
-                    : index % 3 === 1
-                        ? "#29465a"
-                        : "#414149";
+            if (
+                x > VIEW_W ||
+                y > VIEW_H ||
+                x + building.w < 0 ||
+                y + building.h < 0
+            ) {
+                return;
+            }
 
-            ctx.fillStyle = buildingColor;
+            ctx.fillStyle =
+                "#343b4b";
 
             ctx.fillRect(
-                building.x,
-                building.y,
+                x,
+                y,
                 building.w,
                 building.h
             );
 
-            ctx.strokeStyle = "#7c6b9a";
-            ctx.lineWidth = 3;
+            ctx.fillStyle =
+                "rgba(0,0,0,.18)";
 
-            ctx.strokeRect(
-                building.x,
-                building.y,
+            ctx.fillRect(
+                x,
+                y,
                 building.w,
-                building.h
+                16
             );
 
-            // Windows
+            /*
+               Windows
+            */
+
+            ctx.fillStyle =
+                "#68c9e8";
+
+            const windowSize = 10;
+
             for (
-                let wx = building.x + 22;
-                wx < building.x + building.w - 18;
-                wx += 42
+                let wx = x + 15;
+                wx < x + building.w - 10;
+                wx += 28
             ) {
                 for (
-                    let wy = building.y + 25;
-                    wy < building.y + building.h - 18;
-                    wy += 42
+                    let wy = y + 28;
+                    wy < y + building.h - 12;
+                    wy += 28
                 ) {
-                    ctx.fillStyle = isNight()
-                        ? "#ffd76a"
-                        : "#9bd8ff";
+                    ctx.globalAlpha =
+                        0.65;
 
                     ctx.fillRect(
                         wx,
                         wy,
-                        13,
-                        17
+                        windowSize,
+                        windowSize
                     );
                 }
             }
 
-            // Building name
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 14px Arial";
+            ctx.globalAlpha = 1;
 
-            ctx.fillText(
-                building.name,
-                building.x + building.w / 2,
-                building.y + building.h + 18
-            );
+            /*
+               Building label
+            */
+
+            if (building.w > 150) {
+                ctx.fillStyle =
+                    "rgba(0,0,0,.6)";
+
+                ctx.font =
+                    "bold 10px Arial";
+
+                ctx.textAlign =
+                    "center";
+
+                ctx.fillText(
+                    building.name,
+                    x + building.w / 2,
+                    y + building.h - 8
+                );
+            }
         });
+    }
 
-        // Landmarks
+    /* =========================================================
+       DRAW LANDMARKS
+       ========================================================= */
+
+    function drawLandmarks() {
         landmarks.forEach((landmark) => {
-            ctx.textAlign = "center";
+            const x =
+                screenX(landmark.x);
 
-            ctx.font = "26px Arial";
+            const y =
+                screenY(landmark.y);
+
+            if (
+                x < -100 ||
+                y < -100 ||
+                x > VIEW_W + 100 ||
+                y > VIEW_H + 100
+            ) {
+                return;
+            }
+
+            ctx.font =
+                "24px Arial";
+
+            ctx.textAlign =
+                "center";
 
             ctx.fillText(
                 landmark.icon,
-                landmark.x,
-                landmark.y
+                x,
+                y
             );
 
-            ctx.font = "bold 13px Arial";
+            ctx.font =
+                "bold 10px Arial";
 
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle =
+                "rgba(255,255,255,.75)";
 
             ctx.fillText(
-                landmark.name,
-                landmark.x,
-                landmark.y + 25
+                landmark.label,
+                x,
+                y + 20
             );
         });
+    }
 
-        drawPalm(110, 450);
-        drawPalm(3500, 430);
-        drawPalm(1050, 2150);
-        drawPalm(2250, 2170);
-        drawPalm(3000, 2200);
-        drawPalm(1250, 1650);
-        drawPalm(2200, 1650);
+    /* =========================================================
+       DRAW POINTS
+       ========================================================= */
 
-        // Collectibles
-        collectibles.forEach((item) => {
-            if (item.collected) {
+    function drawPoints() {
+        points.forEach((point) => {
+            const x =
+                screenX(point.x);
+
+            const y =
+                screenY(point.y);
+
+            if (
+                x < -80 ||
+                y < -80 ||
+                x > VIEW_W + 80 ||
+                y > VIEW_H + 80
+            ) {
                 return;
             }
 
             const pulse =
                 Math.sin(
-                    performance.now() / 180 +
-                    item.x
+                    performance.now() * 0.004
                 ) * 3;
 
             ctx.beginPath();
 
             ctx.arc(
-                item.x,
-                item.y,
-                9 + pulse,
+                x,
+                y,
+                22 + pulse,
                 0,
                 Math.PI * 2
             );
 
             ctx.fillStyle =
-                item.type === "coin"
-                    ? "#ffd54f"
-                    : "#9b7cff";
+                "rgba(166,91,255,.16)";
 
             ctx.fill();
 
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 2;
+            ctx.font =
+                "20px Arial";
 
-            ctx.stroke();
-        });
-
-        // Interaction markers
-        points.forEach((point) => {
-            const pulse =
-                Math.sin(
-                    performance.now() / 220 +
-                    point.x
-                ) * 4;
-
-            ctx.beginPath();
-
-            ctx.arc(
-                point.x,
-                point.y,
-                21 + pulse,
-                0,
-                Math.PI * 2
-            );
+            ctx.textAlign =
+                "center";
 
             ctx.fillStyle =
-                "rgba(0, 220, 255, .18)";
-
-            ctx.strokeStyle =
-                "#00d9ff";
-
-            ctx.lineWidth = 3;
-
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = "22px Arial";
-            ctx.textAlign = "center";
+                "#ffffff";
 
             ctx.fillText(
                 point.icon,
-                point.x,
-                point.y + 7
+                x,
+                y + 7
             );
 
-            ctx.font = "bold 12px Arial";
-            ctx.fillStyle = "#ffffff";
+            ctx.font =
+                "bold 9px Arial";
+
+            ctx.fillStyle =
+                "rgba(255,255,255,.85)";
 
             ctx.fillText(
                 point.label,
-                point.x,
-                point.y - 30
+                x,
+                y + 31
             );
         });
+    }
 
-        // Mission target
-        const target = missionTarget();
+    /* =========================================================
+       DRAW VEHICLES
+       ========================================================= */
 
-        if (target) {
-            const pulse =
-                28 +
-                Math.sin(
-                    performance.now() / 180
-                ) * 7;
+    function drawVehicles() {
+        vehicles.forEach((vehicle) => {
+            const x =
+                screenX(vehicle.x);
+
+            const y =
+                screenY(vehicle.y);
+
+            if (
+                x < -100 ||
+                y < -100 ||
+                x > VIEW_W + 100 ||
+                y > VIEW_H + 100
+            ) {
+                return;
+            }
+
+            ctx.fillStyle =
+                "#11151e";
+
+            drawRoundedRect(
+                x - vehicle.w / 2,
+                y - vehicle.h / 2,
+                vehicle.w,
+                vehicle.h,
+                8
+            );
+
+            ctx.fill();
+
+            ctx.fillStyle =
+                vehicle.color;
+
+            drawRoundedRect(
+                x - vehicle.w / 2 + 3,
+                y - vehicle.h / 2 + 3,
+                vehicle.w - 6,
+                vehicle.h - 6,
+                6
+            );
+
+            ctx.fill();
+
+            /*
+               Windows
+            */
+
+            ctx.fillStyle =
+                "rgba(30,40,60,.85)";
+
+            ctx.fillRect(
+                x - 15,
+                y - 9,
+                30,
+                10
+            );
+
+            /*
+               Wheels
+            */
+
+            ctx.fillStyle =
+                "#080a0e";
+
+            ctx.fillRect(
+                x - vehicle.w / 2 + 5,
+                y - vehicle.h / 2 - 2,
+                10,
+                6
+            );
+
+            ctx.fillRect(
+                x + vehicle.w / 2 - 15,
+                y - vehicle.h / 2 - 2,
+                10,
+                6
+            );
+
+            ctx.fillRect(
+                x - vehicle.w / 2 + 5,
+                y + vehicle.h / 2 - 4,
+                10,
+                6
+            );
+
+            ctx.fillRect(
+                x + vehicle.w / 2 - 15,
+                y + vehicle.h / 2 - 4,
+                10,
+                6
+            );
+        });
+    }
+
+    /* =========================================================
+       DRAW NPCS
+       ========================================================= */
+
+    function drawNPCs() {
+        npcs.forEach((npc) => {
+            const x =
+                screenX(npc.x);
+
+            const y =
+                screenY(npc.y);
+
+            if (
+                x < -40 ||
+                y < -40 ||
+                x > VIEW_W + 40 ||
+                y > VIEW_H + 40
+            ) {
+                return;
+            }
+
+            /*
+               Shadow
+            */
+
+            ctx.fillStyle =
+                "rgba(0,0,0,.25)";
 
             ctx.beginPath();
 
-            ctx.arc(
-                target.x,
-                target.y,
-                pulse,
+            ctx.ellipse(
+                x,
+                y + 12,
+                10,
+                5,
+                0,
                 0,
                 Math.PI * 2
             );
 
-            ctx.strokeStyle = "#ff4fc3";
-            ctx.lineWidth = 4;
+            ctx.fill();
 
-            ctx.stroke();
+            /*
+               Body
+            */
 
-            ctx.fillStyle = "#ff4fc3";
-            ctx.font = "bold 13px Arial";
-
-            ctx.fillText(
-                "MISSION",
-                target.x,
-                target.y - 38
-            );
-        }
-
-        // Vehicles
-        vehicles.forEach((vehicle) => {
-            drawVehicle(vehicle);
-        });
-
-        // NPC
-        npcs.forEach((npc) => {
-            drawNPC(npc);
-        });
-
-        // Player
-        drawPlayer();
-
-        ctx.restore();
-
-        // Night overlay
-        if (isNight()) {
-            ctx.fillStyle = "rgba(10, 8, 35, .38)";
+            ctx.fillStyle =
+                "#5e78ff";
 
             ctx.fillRect(
-                0,
-                0,
-                canvas.width,
-                canvas.height
+                x - 7,
+                y,
+                14,
+                15
             );
-        }
-    }
 
-    // ---------------------------------------------------------
-    // PALM
-    // ---------------------------------------------------------
+            /*
+               Head
+            */
 
-    function drawPalm(x, y) {
-        ctx.strokeStyle = "#76513c";
-        ctx.lineWidth = 9;
+            ctx.fillStyle =
+                "#f1c7a5";
 
-        ctx.beginPath();
-
-        ctx.moveTo(
-            x,
-            y + 50
-        );
-
-        ctx.lineTo(
-            x + 5,
-            y
-        );
-
-        ctx.stroke();
-
-        ctx.strokeStyle = "#2ecb78";
-        ctx.lineWidth = 6;
-
-        const leaves = [
-            [-38, -24],
-            [-22, -35],
-            [0, -42],
-            [22, -35],
-            [38, -24]
-        ];
-
-        leaves.forEach(([dx, dy]) => {
             ctx.beginPath();
 
-            ctx.moveTo(
-                x + 5,
+            ctx.arc(
+                x,
+                y - 7,
+                7,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+            if (npc.talkable) {
+                ctx.fillStyle =
+                    "#ffe66d";
+
+                ctx.font =
+                    "bold 12px Arial";
+
+                ctx.textAlign =
+                    "center";
+
+                ctx.fillText(
+                    "?",
+                    x,
+                    y - 20
+                );
+            }
+        });
+    }
+
+    /* =========================================================
+       DRAW COLLECTIBLES
+       ========================================================= */
+
+    function drawCollectibles() {
+        collectibles.forEach((item) => {
+            if (item.collected) {
+                return;
+            }
+
+            const x =
+                screenX(item.x);
+
+            const y =
+                screenY(item.y);
+
+            if (
+                x < -30 ||
+                y < -30 ||
+                x > VIEW_W + 30 ||
+                y > VIEW_H + 30
+            ) {
+                return;
+            }
+
+            const scale =
+                1 +
+                Math.sin(item.pulse) *
+                0.12;
+
+            ctx.save();
+
+            ctx.translate(
+                x,
                 y
             );
 
-            ctx.lineTo(
-                x + dx,
-                y + dy
+            ctx.scale(
+                scale,
+                scale
             );
 
-            ctx.stroke();
+            ctx.textAlign =
+                "center";
+
+            ctx.font =
+                "20px Arial";
+
+            ctx.fillText(
+                item.type === "star"
+                    ? "⭐"
+                    : "🪙",
+                0,
+                7
+            );
+
+            ctx.restore();
         });
     }
 
-    // ---------------------------------------------------------
-    // VEHICLE DRAW
-    // ---------------------------------------------------------
+    /* =========================================================
+       DRAW PLAYER
+       ========================================================= */
 
-    function drawVehicle(vehicle) {
-        ctx.save();
+    function drawPlayer() {
+        const x =
+            screenX(player.x);
 
-        ctx.translate(
-            vehicle.x,
-            vehicle.y
-        );
+        const y =
+            screenY(player.y);
 
-        ctx.rotate(vehicle.angle);
+        /*
+           Shadow
+        */
 
-        ctx.fillStyle = "rgba(0,0,0,.3)";
-
-        ctx.beginPath();
-
-        ctx.ellipse(
-            0,
-            10,
-            27,
-            11,
-            0,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.fillStyle = vehicle.color;
-
-        ctx.fillRect(
-            -27,
-            -13,
-            54,
-            28
-        );
-
-        ctx.fillStyle = "#151923";
-
-        ctx.fillRect(
-            -15,
-            -9,
-            30,
-            16
-        );
-
-        ctx.fillStyle = "#f4f4f4";
-
-        ctx.fillRect(
-            -25,
-            -9,
-            5,
-            8
-        );
-
-        ctx.fillRect(
-            20,
-            -9,
-            5,
-            8
-        );
-
-        ctx.restore();
-    }
-
-    // ---------------------------------------------------------
-    // NPC DRAW
-    // ---------------------------------------------------------
-
-    function drawNPC(npc) {
-        ctx.save();
-
-        ctx.translate(
-            npc.x,
-            npc.y
-        );
-
-        ctx.fillStyle = "rgba(0,0,0,.25)";
+        ctx.fillStyle =
+            "rgba(0,0,0,.3)";
 
         ctx.beginPath();
 
         ctx.ellipse(
-            0,
+            x,
+            y + 17,
             12,
-            11,
             6,
             0,
             0,
@@ -2182,240 +2711,298 @@
 
         ctx.fill();
 
-        ctx.fillStyle = npc.shirt;
-
-        ctx.fillRect(
-            -8,
-            -3,
-            16,
-            18
-        );
-
-        ctx.fillStyle = "#e8b18a";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            0,
-            -12,
-            8,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.fillStyle = "#25202c";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            0,
-            -15,
-            8,
-            Math.PI,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    // ---------------------------------------------------------
-    // PLAYER DRAW
-    // ---------------------------------------------------------
-
-    function drawPlayer() {
         if (player.inVehicle) {
+            /*
+               Vehicle player
+            */
+
+            ctx.fillStyle =
+                "#f0447e";
+
+            drawRoundedRect(
+                x - 28,
+                y - 15,
+                56,
+                30,
+                8
+            );
+
+            ctx.fill();
+
+            ctx.fillStyle =
+                "#253148";
+
+            ctx.fillRect(
+                x - 15,
+                y - 9,
+                30,
+                10
+            );
+
             return;
         }
 
-        ctx.save();
+        /*
+           Body
+        */
 
-        ctx.translate(
-            player.x,
-            player.y
-        );
+        ctx.fillStyle =
+            "#754cff";
 
-        ctx.fillStyle = "rgba(0,0,0,.35)";
-
-        ctx.beginPath();
-
-        ctx.ellipse(
-            0,
-            15,
-            16,
-            7,
-            0,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        // Body
-        ctx.fillStyle = "#e85cff";
-
-        ctx.fillRect(
-            -11,
-            -3,
+        drawRoundedRect(
+            x - 9,
+            y - 1,
+            18,
             22,
-            25
+            7
         );
 
-        // Head
-        ctx.fillStyle = "#efb184";
+        ctx.fill();
+
+        /*
+           Head
+        */
+
+        ctx.fillStyle =
+            "#f2c9aa";
 
         ctx.beginPath();
 
         ctx.arc(
-            0,
-            -15,
-            10,
+            x,
+            y - 10,
+            9,
             0,
             Math.PI * 2
         );
 
         ctx.fill();
 
-        // Hair
-        ctx.fillStyle = "#211528";
+        /*
+           Hair
+        */
+
+        ctx.fillStyle =
+            "#171522";
 
         ctx.beginPath();
 
         ctx.arc(
-            0,
-            -19,
-            10,
+            x,
+            y - 14,
+            9,
             Math.PI,
             Math.PI * 2
         );
 
         ctx.fill();
 
-        // Direction indicator
-        ctx.fillStyle = "#ffffff";
+        /*
+           Direction indicator
+        */
+
+        ctx.fillStyle =
+            "#ffffff";
+
+        ctx.font =
+            "9px Arial";
+
+        ctx.textAlign =
+            "center";
 
         if (player.direction === "up") {
-            ctx.fillRect(
-                -3,
-                -31,
-                6,
-                5
+            ctx.fillText(
+                "▲",
+                x,
+                y - 25
             );
         }
 
         if (player.direction === "down") {
-            ctx.fillRect(
-                -3,
-                25,
-                6,
-                5
+            ctx.fillText(
+                "▼",
+                x,
+                y + 31
             );
         }
-
-        if (player.direction === "left") {
-            ctx.fillRect(
-                -18,
-                -3,
-                5,
-                6
-            );
-        }
-
-        if (player.direction === "right") {
-            ctx.fillRect(
-                13,
-                -3,
-                5,
-                6
-            );
-        }
-
-        ctx.restore();
     }
 
-    // ---------------------------------------------------------
-    // MINIMAP
-    // ---------------------------------------------------------
+    /* =========================================================
+       DRAW MISSION TARGET
+       ========================================================= */
 
-    function drawMinimap() {
-        const size = 135;
-        const padding = 10;
+    function drawMissionTarget() {
+        const mission =
+            state.activeMission;
+
+        if (!mission) {
+            return;
+        }
 
         const x =
-            canvas.width -
-            size -
-            padding;
-
-        const y = padding;
-
-        ctx.save();
-
-        ctx.fillStyle = "rgba(5,7,15,.78)";
-
-        ctx.fillRect(
-            x,
-            y,
-            size,
-            size
-        );
-
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-            x,
-            y,
-            size,
-            size
-        );
-
-        // Roads
-        ctx.fillStyle = "#444a56";
-
-        roads.forEach((road) => {
-            ctx.fillRect(
-                x + (road.x / WORLD.width) * size,
-                y + (road.y / WORLD.height) * size,
-                Math.max(
-                    2,
-                    (road.w / WORLD.width) * size
-                ),
-                Math.max(
-                    2,
-                    (road.h / WORLD.height) * size
-                )
+            screenX(
+                mission.target.x
             );
-        });
 
-        // Buildings
-        ctx.fillStyle = "#6c527f";
-
-        buildings.forEach((building) => {
-            ctx.fillRect(
-                x + (building.x / WORLD.width) * size,
-                y + (building.y / WORLD.height) * size,
-                Math.max(
-                    2,
-                    (building.w / WORLD.width) * size
-                ),
-                Math.max(
-                    2,
-                    (building.h / WORLD.height) * size
-                )
+        const y =
+            screenY(
+                mission.target.y
             );
-        });
 
-        // Player
-        ctx.fillStyle = "#ff4fc3";
+        const pulse =
+            25 +
+            Math.sin(
+                performance.now() * 0.005
+            ) * 5;
+
+        ctx.strokeStyle =
+            "rgba(70,220,255,.9)";
+
+        ctx.lineWidth = 3;
 
         ctx.beginPath();
 
         ctx.arc(
-            x + (player.x / WORLD.width) * size,
-            y + (player.y / WORLD.height) * size,
+            x,
+            y,
+            pulse,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.stroke();
+
+        ctx.fillStyle =
+            "#48ddff";
+
+        ctx.font =
+            "bold 12px Arial";
+
+        ctx.textAlign =
+            "center";
+
+        ctx.fillText(
+            "TARGET",
+            x,
+            y - 34
+        );
+    }
+
+    /* =========================================================
+       DAY / NIGHT
+       ========================================================= */
+
+    function drawDayNight() {
+        let alpha = 0;
+
+        if (
+            state.dayTime >= 19 ||
+            state.dayTime < 6
+        ) {
+            alpha = 0.38;
+        } else if (
+            state.dayTime >= 17
+        ) {
+            alpha = 0.18;
+        }
+
+        if (alpha <= 0) {
+            return;
+        }
+
+        ctx.fillStyle =
+            `rgba(12,16,55,${alpha})`;
+
+        ctx.fillRect(
+            0,
+            0,
+            VIEW_W,
+            VIEW_H
+        );
+    }
+
+    /* =========================================================
+       MINIMAP
+       ========================================================= */
+
+    function drawMinimap() {
+        const mapW = 170;
+        const mapH = 110;
+
+        const x =
+            VIEW_W - mapW - 14;
+
+        const y = 14;
+
+        ctx.fillStyle =
+            "rgba(5,7,14,.82)";
+
+        drawRoundedRect(
+            x,
+            y,
+            mapW,
+            mapH,
+            12
+        );
+
+        ctx.fill();
+
+        /*
+           Roads
+        */
+
+        ctx.strokeStyle =
+            "rgba(255,255,255,.15)";
+
+        ctx.lineWidth = 2;
+
+        roads.forEach((road) => {
+            ctx.beginPath();
+
+            ctx.rect(
+                x +
+                    (road.x / WORLD_W) *
+                        mapW,
+                y +
+                    (road.y / WORLD_H) *
+                        mapH,
+                Math.max(
+                    2,
+                    (road.w / WORLD_W) *
+                        mapW
+                ),
+                Math.max(
+                    2,
+                    (road.h / WORLD_H) *
+                        mapH
+                )
+            );
+
+            ctx.stroke();
+        });
+
+        /*
+           Player
+        */
+
+        const px =
+            x +
+            (player.x / WORLD_W) *
+                mapW;
+
+        const py =
+            y +
+            (player.y / WORLD_H) *
+                mapH;
+
+        ctx.fillStyle =
+            "#ff4fc3";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            px,
+            py,
             4,
             0,
             Math.PI * 2
@@ -2423,213 +3010,262 @@
 
         ctx.fill();
 
-        ctx.restore();
-    }
+        /*
+           Mission target
+        */
 
-    // ---------------------------------------------------------
-    // GAME UPDATE
-    // ---------------------------------------------------------
+        if (state.activeMission) {
+            const tx =
+                x +
+                (state.activeMission.target.x /
+                    WORLD_W) *
+                    mapW;
 
-    function update(dt) {
-        let dx = 0;
-        let dy = 0;
+            const ty =
+                y +
+                (state.activeMission.target.y /
+                    WORLD_H) *
+                    mapH;
 
-        if (keys.ArrowLeft || keys.a) {
-            dx -= 1;
-        }
+            ctx.fillStyle =
+                "#43dfff";
 
-        if (keys.ArrowRight || keys.d) {
-            dx += 1;
-        }
+            ctx.beginPath();
 
-        if (keys.ArrowUp || keys.w) {
-            dy -= 1;
-        }
-
-        if (keys.ArrowDown || keys.s) {
-            dy += 1;
-        }
-
-        if (dx !== 0 || dy !== 0) {
-            const length = Math.hypot(dx, dy);
-
-            dx /= length;
-            dy /= length;
-
-            const running =
-                keys.Shift ||
-                keys.shift;
-
-            let speed = running
-                ? player.runSpeed
-                : player.walkSpeed;
-
-            if (player.inVehicle) {
-                speed = 7;
-            }
-
-            movePlayer(
-                dx * speed * dt,
-                dy * speed * dt
+            ctx.arc(
+                tx,
+                ty,
+                3,
+                0,
+                Math.PI * 2
             );
+
+            ctx.fill();
         }
 
-        if (player.inVehicle) {
-            updateVehicle();
-        }
+        ctx.fillStyle =
+            "rgba(255,255,255,.7)";
 
-        updateNPCs(dt);
-        updateCollectibles();
-        updateMission();
-        updateCamera();
-        updateTime(dt);
+        ctx.font =
+            "bold 9px Arial";
 
-        player.energy = clamp(
-            player.energy +
-            (dx === 0 && dy === 0 ? 0.025 : -0.04) * dt,
-            0,
-            100
+        ctx.textAlign =
+            "left";
+
+        ctx.fillText(
+            "CRACKER CITY",
+            x + 8,
+            y + 13
         );
     }
 
-    // ---------------------------------------------------------
-    // DRAW
-    // ---------------------------------------------------------
+    /* =========================================================
+       INTERACTION HINT
+       ========================================================= */
+
+    function drawInteractionHint() {
+        if (state.panelOpen) {
+            return;
+        }
+
+        const point =
+            nearestPoint();
+
+        const npc =
+            nearestNPC();
+
+        const vehicle =
+            nearestVehicle();
+
+        if (
+            !point &&
+            !npc &&
+            !vehicle
+        ) {
+            return;
+        }
+
+        let text = "ACTION";
+
+        if (point) {
+            text =
+                `${point.icon} ${point.label}`;
+        } else if (npc) {
+            text =
+                `💬 Talk to ${npc.name}`;
+        } else if (vehicle) {
+            text =
+                player.inVehicle
+                    ? "🚗 Vehicle"
+                    : "🚗 Enter vehicle";
+        }
+
+        ctx.fillStyle =
+            "rgba(7,9,18,.9)";
+
+        const width = 160;
+        const height = 32;
+
+        const x =
+            VIEW_W / 2 -
+            width / 2;
+
+        const y =
+            VIEW_H - 55;
+
+        drawRoundedRect(
+            x,
+            y,
+            width,
+            height,
+            10
+        );
+
+        ctx.fill();
+
+        ctx.fillStyle =
+            "#ffffff";
+
+        ctx.font =
+            "bold 12px Arial";
+
+        ctx.textAlign =
+            "center";
+
+        ctx.fillText(
+            text,
+            VIEW_W / 2,
+            y + 21
+        );
+    }
+
+    /* =========================================================
+       FULL DRAW
+       ========================================================= */
 
     function draw() {
-        drawBackground();
+        ctx.clearRect(
+            0,
+            0,
+            VIEW_W,
+            VIEW_H
+        );
+
+        drawGround();
+        drawRoads();
+        drawBuildings();
+        drawLandmarks();
+        drawPoints();
+        drawCollectibles();
+        drawVehicles();
+        drawNPCs();
+        drawMissionTarget();
+        drawPlayer();
+        drawDayNight();
         drawMinimap();
+        drawInteractionHint();
     }
 
-    // ---------------------------------------------------------
-    // GAME LOOP
-    // ---------------------------------------------------------
+    /* =========================================================
+       GAME LOOP
+       ========================================================= */
 
-    function gameLoop(now) {
-        const delta =
-            Math.min(
-                (now - lastTime) / 16.67,
-                2
-            );
+    function gameLoop() {
+        updatePlayer();
+        updateCamera();
+        updateNPCs();
+        updateCollectibles();
+        updateMission();
+        updateTime();
 
-        lastTime = now;
-
-        update(delta);
         draw();
 
-        requestAnimationFrame(gameLoop);
+        requestAnimationFrame(
+            gameLoop
+        );
     }
 
-    // ---------------------------------------------------------
-    // KEYBOARD
-    // ---------------------------------------------------------
+    /* =========================================================
+       TELEGRAM WEB APP
+       ========================================================= */
+
+    try {
+        if (
+            window.Telegram &&
+            window.Telegram.WebApp
+        ) {
+            const tg =
+                window.Telegram.WebApp;
+
+            tg.ready();
+
+            if (tg.expand) {
+                tg.expand();
+            }
+
+            if (tg.disableVerticalSwipes) {
+                tg.disableVerticalSwipes();
+            }
+        }
+    } catch (error) {
+        console.warn(
+            "Telegram WebApp setup skipped.",
+            error
+        );
+    }
+
+    /* =========================================================
+       TOUCH / CANVAS
+       ========================================================= */
+
+    canvas.addEventListener(
+        "contextmenu",
+        (e) => {
+            e.preventDefault();
+        }
+    );
+
+    canvas.addEventListener(
+        "pointerdown",
+        (e) => {
+            e.preventDefault();
+
+            if (!state.panelOpen) {
+                interact();
+            }
+        }
+    );
+
+    /* =========================================================
+       ESCAPE VEHICLE
+       ========================================================= */
 
     window.addEventListener(
         "keydown",
-        (event) => {
-            keys[event.key] = true;
-
+        (e) => {
             if (
-                [
-                    "ArrowUp",
-                    "ArrowDown",
-                    "ArrowLeft",
-                    "ArrowRight",
-                    " "
-                ].includes(event.key)
+                e.key.toLowerCase() === "q" &&
+                player.inVehicle
             ) {
-                event.preventDefault();
-            }
-
-            if (
-                event.key === "e" ||
-                event.key === "E" ||
-                event.key === " "
-            ) {
-                interact();
-            }
-
-            if (event.key === "Escape") {
-                hidePanel();
+                exitVehicle();
             }
         }
     );
 
-    window.addEventListener(
-        "keyup",
-        (event) => {
-            keys[event.key] = false;
-        }
-    );
-
-    // ---------------------------------------------------------
-    // MOBILE CONTROLS
-    // ---------------------------------------------------------
-
-    document
-        .querySelectorAll("[data-key]")
-        .forEach((button) => {
-            const key = button.dataset.key;
-
-            const start = (event) => {
-                event.preventDefault();
-                keys[key] = true;
-            };
-
-            const stop = (event) => {
-                event.preventDefault();
-                keys[key] = false;
-            };
-
-            button.addEventListener(
-                "pointerdown",
-                start
-            );
-
-            button.addEventListener(
-                "pointerup",
-                stop
-            );
-
-            button.addEventListener(
-                "pointercancel",
-                stop
-            );
-
-            button.addEventListener(
-                "pointerleave",
-                stop
-            );
-        });
-
-    if (actionBtn) {
-        actionBtn.addEventListener(
-            "click",
-            interact
-        );
-    }
-
-    canvas.addEventListener(
-        "click",
-        () => {
-            interact();
-        }
-    );
-
-    // ---------------------------------------------------------
-    // INITIAL MESSAGE
-    // ---------------------------------------------------------
+    /* =========================================================
+       INITIAL HUD
+       ========================================================= */
 
     updateHUD();
 
     setMissionText(
-        "🏙️ Welcome to Cracker City! Walk to the 🎯 marker to get your first mission."
+        "Welcome to Cracker City! Explore the streets and find the 📋 mission marker."
     );
 
-    // ---------------------------------------------------------
-    // START
-    // ---------------------------------------------------------
+    /* =========================================================
+       START
+       ========================================================= */
 
-    requestAnimationFrame(gameLoop);
+    gameLoop();
 
 })();
